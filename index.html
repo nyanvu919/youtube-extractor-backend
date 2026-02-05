@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Info Extractor - Lấy Thông Tin Video YouTube</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="logo">
+                <i class="fab fa-youtube"></i>
+                <h1>YouTube Info Extractor</h1>
+            </div>
+            <p class="subtitle">Dán link YouTube để lấy toàn bộ thông tin video</p>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main">
+            <!-- INPUT SECTION -->
+            <div class="input-section">
+                <div class="input-group">
+                    <i class="fas fa-link"></i>
+                    <input type="text" id="youtubeUrl" 
+                           placeholder="Dán URL YouTube vào đây... Ví dụ: https://www.youtube.com/watch?v=...">
+                </div>
+                
+                <div class="api-key-input">
+                    <label for="apiKey">
+                        <i class="fas fa-key"></i> API Key của bạn:
+                    </label>
+                    <input type="text" id="apiKey" 
+                           placeholder="Dán API Key bạn đã lấy từ Google Cloud Console">
+                </div>
+                
+                <button id="getInfoBtn" class="btn-primary">
+                    <i class="fas fa-search"></i> LẤY THÔNG TIN
+                </button>
+                
+                <div class="export-buttons">
+                    <button id="exportJson" class="btn-secondary">
+                        <i class="fas fa-file-export"></i> Xuất JSON
+                    </button>
+                    <button id="exportCSV" class="btn-secondary">
+                        <i class="fas fa-file-csv"></i> Xuất CSV
+                    </button>
+                    <button id="exportPDF" class="btn-secondary">
+                        <i class="fas fa-file-pdf"></i> Xuất PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- LOADING -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <p>Đang lấy thông tin từ YouTube...</p>
+            </div>
+
+            <!-- RESULTS SECTION -->
+            <div id="result" class="result">
+                <!-- Results will be displayed here by JavaScript -->
+            </div>
+
+            <!-- INSTRUCTIONS -->
+            <div class="instructions">
+                <h3><i class="fas fa-info-circle"></i> Hướng dẫn sử dụng:</h3>
+                <ol>
+                    <li><strong>Bước 1:</strong> Lấy API Key miễn phí từ <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+                    <li><strong>Bước 2:</strong> Dán API Key vào ô "API Key của bạn"</li>
+                    <li><strong>Bước 3:</strong> Copy link video YouTube và dán vào ô trên cùng</li>
+                    <li><strong>Bước 4:</strong> Click "LẤY THÔNG TIN" và đợi kết quả</li>
+                    <li><strong>Bước 5:</strong> Chuyển qua lại giữa các tab để xem tất cả thông tin</li>
+                </ol>
+                
+                <div class="features">
+                    <h4><i class="fas fa-star"></i> Tính năng nổi bật:</h4>
+                    <ul>
+                        <li>Lấy 25+ loại thông tin khác nhau</li>
+                        <li>Phân tích SEO và tối ưu video</li>
+                        <li>Xem thống kê chi tiết với biểu đồ</li>
+                        <li>Xuất dữ liệu ra JSON, CSV, PDF</li>
+                        <li>Tự động lưu API Key cho lần sau</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer>
+            <p>© 2024 YouTube Info Extractor - Công cụ sử dụng YouTube Data API v3</p>
+            <p class="warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Lưu ý quan trọng:</strong> Không chia sẻ API Key với người khác. Giới hạn 10,000 requests/ngày miễn phí.
+            </p>
+        </footer>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

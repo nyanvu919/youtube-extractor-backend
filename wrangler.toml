@@ -1,0 +1,10 @@
+name = "youtube-extractor-backend"
+main = "src/index.js"
+compatibility_date = "2023-11-21"
+
+[vars]
+# Chúng ta sẽ không đặt các biến nhạy cảm ở đây.
+# Thay vào đó, chúng ta sẽ thêm chúng dưới dạng "Secrets" trong Dashboard của Cloudflare.
+FRONTEND_URL = "https:/youtube-extractor-backend.pages.dev" # CẬP NHẬT SAU KHI DEPLOY FRONTEND
+PRICE_ID_MONTHLY="price_..." # ID giá từ Stripe
+PRICE_ID_YEARLY="price_..." # ID giá từ Stripe
