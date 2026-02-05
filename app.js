@@ -69,7 +69,6 @@ function formatNumber(num) {
 }
 
 function formatDuration(isoDuration) {
-    // PT1H2M30S -> 1 giờ 2 phút 30 giây
     const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
     const hours = parseInt(match[1] || 0);
     const minutes = parseInt(match[2] || 0);
@@ -97,7 +96,6 @@ function formatBytes(bytes) {
 
 async function fetchAllVideoInfo(videoId, apiKey) {
     try {
-        // Gọi API với TẤT CẢ các parts có thể
         const response = await fetch(
             `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics,status,topicDetails,recordingDetails,liveStreamingDetails,localizations&id=${videoId}&key=${apiKey}`
         );
@@ -158,7 +156,6 @@ function analyzeVideoData(videoData, categoryName, channelInfo) {
     const live = videoData.liveStreamingDetails || {};
     const localizations = videoData.localizations || {};
     
-    // Phân tích thời gian
     const publishedDate = new Date(snippet.publishedAt);
     const now = new Date();
     const diffTime = Math.abs(now - publishedDate);
@@ -166,7 +163,6 @@ function analyzeVideoData(videoData, categoryName, channelInfo) {
     const diffMonths = Math.floor(diffDays / 30);
     const diffYears = Math.floor(diffDays / 365);
     
-    // Phân tích engagement rate
     const viewCount = parseInt(stats.viewCount || 0);
     const likeCount = parseInt(stats.likeCount || 0);
     const commentCount = parseInt(stats.commentCount || 0);
@@ -175,20 +171,17 @@ function analyzeVideoData(videoData, categoryName, channelInfo) {
     const commentRate = viewCount > 0 ? ((commentCount / viewCount) * 100).toFixed(4) : 0;
     const engagementRate = ((likeCount + commentCount) / viewCount * 100).toFixed(2);
     
-    // Phân tích thời lượng
     const durationSec = parseDurationToSeconds(content.duration);
     const durationType = durationSec < 60 ? 'Ngắn' : 
                         durationSec < 300 ? 'Trung bình' : 
                         durationSec < 600 ? 'Dài' : 'Rất dài';
     
-    // Phân tích tags
     const tags = snippet.tags || [];
     const tagCount = tags.length;
     const tagDensity = snippet.description ? 
         (tags.join(' ').length / snippet.description.length * 100).toFixed(2) : 0;
     
     return {
-        // Thông tin cơ bản
         basic: {
             title: snippet.title || 'Không có tiêu đề',
             description: snippet.description || 'Không có mô tả',
@@ -199,8 +192,6 @@ function analyzeVideoData(videoData, categoryName, channelInfo) {
             publishedAtFormatted: formatDate(snippet.publishedAt),
             thumbnails: snippet.thumbnails || {}
         },
-        
-        // Thống kê
         statistics: {
             viewCount: formatNumber(stats.viewCount),
             viewCountRaw: parseInt(stats.viewCount || 0),
@@ -211,8 +202,6 @@ function analyzeVideoData(videoData, categoryName, channelInfo) {
             commentCountRaw: parseInt(stats.commentCount || 0),
             favoriteCount: formatNumber(stats.favoriteCount)
         },
-        
-        // Chi tiết nội dung
         contentDetails: {
             duration: content.duration,
             durationFormatted: formatDuration(content.duration),
@@ -225,8 +214,6 @@ function analyzeVideoData(videoData, categoryName, channelInfo) {
             projection: content.projection === '360' ? 'Video 360°' : 'Thông thường',
             hasCustomThumbnail: !!snippet.thumbnails?.maxres
         },
-        
-        // Trạng thái
         status: {
             uploadStatus: status.uploadStatus || 'Không xác định',
             privacyStatus: status.privacyStatus === 'public' ? 'Công khai' : 
@@ -236,8 +223,6 @@ function analyzeVideoData(videoData, categoryName, channelInfo) {
             publicStatsViewable: status.publicStatsViewable ? 'Hiện công khai' : 'Ẩn thống kê',
             madeForKids: status.madeForKids ? 'Video cho trẻ em' : 'Video cho mọi lứa tuổi'
         },
-        
-        // Phân loại
         categorization: {
             categoryId: snippet.categoryId,
             categoryName: categoryName,
@@ -246,22 +231,16 @@ function analyzeVideoData(videoData, categoryName, channelInfo) {
             defaultLanguage: snippet.defaultLanguage || 'Không xác định',
             defaultAudioLanguage: snippet.defaultAudioLanguage || 'Không xác định'
         },
-        
-        // Chủ đề
         topics: {
             topicCategories: topics.topicCategories || [],
             relevantTopicIds: topics.relevantTopicIds || [],
             topicCount: (topics.topicCategories || []).length
         },
-        
-        // Localizations
         localizations: {
             availableLanguages: Object.keys(localizations).length,
             languages: Object.keys(localizations),
             hasLocalizedContent: Object.keys(localizations).length > 0
         },
-        
-        // Live stream (nếu có)
         liveStreaming: live ? {
             actualStartTime: live.actualStartTime,
             actualEndTime: live.actualEndTime,
@@ -270,14 +249,10 @@ function analyzeVideoData(videoData, categoryName, channelInfo) {
             concurrentViewers: live.concurrentViewers,
             wasLive: true
         } : { wasLive: false },
-        
-        // Recording details (nếu có)
         recordingDetails: recording.location ? {
             locationDescription: recording.locationDescription,
             hasLocation: true
         } : { hasLocation: false },
-        
-        // Phân tích
         analysis: {
             age: {
                 daysOld: diffDays,
@@ -302,8 +277,6 @@ function analyzeVideoData(videoData, categoryName, channelInfo) {
                 descriptionWordCount: snippet.description?.split(' ').length || 0
             }
         },
-        
-        // Thông tin kênh (nếu có)
         channel: channelInfo ? {
             channelTitle: channelInfo.snippet?.title,
             subscriberCount: formatNumber(channelInfo.statistics?.subscriberCount),
@@ -461,20 +434,6 @@ function createOverviewTab(videoInfo) {
                 <span><i class="fas fa-list-ol"></i> ${videoInfo.analysis.seo.descriptionWordCount} từ</span>
             </div>
         </div>
-        
-        ${videoInfo.categorization.tags.length > 0 ? `
-            <div class="tags-section">
-                <h3><i class="fas fa-tags"></i> Tags (${videoInfo.categorization.tagCount} tags)</h3>
-                <div class="tags-cloud">
-                    ${videoInfo.categorization.tags.map((tag, index) => `
-                        <span class="tag" style="font-size: ${12 + Math.min(tag.length, 10)}px">
-                            ${tag}
-                            <small>${index + 1}</small>
-                        </span>
-                    `).join('')}
-                </div>
-            </div>
-        ` : ''}
     `;
 }
 
@@ -489,64 +448,16 @@ function createDetailsTab(videoInfo) {
                     <tr><td>Video 360°:</td><td>${videoInfo.contentDetails.projection}</td></tr>
                     <tr><td>Phụ đề:</td><td>${videoInfo.contentDetails.caption}</td></tr>
                     <tr><td>Bản quyền:</td><td>${videoInfo.contentDetails.licensedContent}</td></tr>
-                    <tr><td>Thumbnail tùy chỉnh:</td><td>${videoInfo.contentDetails.hasCustomThumbnail ? 'Có' : 'Không'}</td></tr>
                 </table>
             </div>
-            
             <div class="detail-section">
                 <h3><i class="fas fa-lock"></i> Trạng thái & Quyền</h3>
                 <table class="details-table">
-                    <tr><td>Trạng thái tải lên:</td><td>${videoInfo.status.uploadStatus}</td></tr>
                     <tr><td>Chế độ riêng tư:</td><td>${videoInfo.status.privacyStatus}</td></tr>
                     <tr><td>Giấy phép:</td><td>${videoInfo.status.license}</td></tr>
-                    <tr><td>Có thể nhúng:</td><td>${videoInfo.status.embeddable}</td></tr>
-                    <tr><td>Thống kê công khai:</td><td>${videoInfo.status.publicStatsViewable}</td></tr>
                     <tr><td>Cho trẻ em:</td><td>${videoInfo.status.madeForKids}</td></tr>
                 </table>
             </div>
-            
-            <div class="detail-section">
-                <h3><i class="fas fa-globe"></i> Ngôn ngữ & Vùng</h3>
-                <table class="details-table">
-                    <tr><td>Ngôn ngữ mặc định:</td><td>${videoInfo.categorization.defaultLanguage}</td></tr>
-                    <tr><td>Ngôn ngữ audio:</td><td>${videoInfo.categorization.defaultAudioLanguage}</td></tr>
-                    <tr><td>Bản địa hóa:</td><td>${videoInfo.localizations.availableLanguages} ngôn ngữ</td></tr>
-                    <tr><td>Live Stream:</td><td>${videoInfo.liveStreaming.wasLive ? 'Có' : 'Không'}</td></tr>
-                    <tr><td>Vị trí quay:</td><td>${videoInfo.recordingDetails.hasLocation ? 'Có' : 'Không'}</td></tr>
-                </table>
-            </div>
-            
-            <div class="detail-section full-width">
-                <h3><i class="fas fa-layer-group"></i> Thumbnails có sẵn</h3>
-                <div class="thumbnails-grid">
-                    ${Object.entries(videoInfo.basic.thumbnails).map(([key, thumb]) => `
-                        <div class="thumbnail-item">
-                            <img src="${thumb.url}" alt="${key}" style="width: 100%">
-                            <div class="thumbnail-info">
-                                <strong>${key.toUpperCase()}</strong><br>
-                                ${thumb.width}×${thumb.height}px<br>
-                                <button onclick="window.open('${thumb.url}', '_blank')" class="btn-small">
-                                    <i class="fas fa-external-link-alt"></i> Mở
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-            
-            ${videoInfo.topics.topicCount > 0 ? `
-                <div class="detail-section full-width">
-                    <h3><i class="fas fa-folder"></i> Chủ đề phân loại (${videoInfo.topics.topicCount})</h3>
-                    <div class="topics-list">
-                        ${videoInfo.topics.topicCategories.map(url => `
-                            <div class="topic-item">
-                                <i class="fas fa-link"></i>
-                                <a href="${url}" target="_blank">${url}</a>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            ` : ''}
         </div>
     `;
 }
@@ -559,127 +470,20 @@ function createStatisticsTab(videoInfo) {
     return `
         <div class="stats-container">
             <h3><i class="fas fa-chart-pie"></i> Phân bổ tương tác</h3>
-            
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-header">
-                        <i class="fas fa-eye" style="color: #3498db;"></i>
-                        <h4>Lượt xem</h4>
-                    </div>
+                    <h4>Lượt xem</h4>
                     <div class="stat-number">${videoInfo.statistics.viewCount}</div>
-                    <div class="stat-progress">
-                        <div class="progress-bar" style="width: 100%; background: #3498db;"></div>
-                    </div>
                 </div>
-                
                 <div class="stat-card">
-                    <div class="stat-header">
-                        <i class="fas fa-thumbs-up" style="color: #2ecc71;"></i>
-                        <h4>Lượt thích</h4>
-                    </div>
+                    <h4>Lượt thích</h4>
                     <div class="stat-number">${videoInfo.statistics.likeCount}</div>
-                    <div class="stat-progress">
-                        <div class="progress-bar" style="width: ${views > 0 ? (likes/views*100) : 0}%; background: #2ecc71;"></div>
-                    </div>
-                    <div class="stat-percent">${views > 0 ? (likes/views*100).toFixed(2) : 0}%</div>
                 </div>
-                
                 <div class="stat-card">
-                    <div class="stat-header">
-                        <i class="fas fa-comment" style="color: #9b59b6;"></i>
-                        <h4>Bình luận</h4>
-                    </div>
+                    <h4>Bình luận</h4>
                     <div class="stat-number">${videoInfo.statistics.commentCount}</div>
-                    <div class="stat-progress">
-                        <div class="progress-bar" style="width: ${views > 0 ? (comments/views*100) : 0}%; background: #9b59b6;"></div>
-                    </div>
-                    <div class="stat-percent">${views > 0 ? (comments/views*100).toFixed(2) : 0}%</div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <i class="fas fa-heart" style="color: #e74c3c;"></i>
-                        <h4>Yêu thích</h4>
-                    </div>
-                    <div class="stat-number">${videoInfo.statistics.favoriteCount}</div>
                 </div>
             </div>
-            
-            <div class="charts-container">
-                <div class="chart-box">
-                    <h4><i class="fas fa-percentage"></i> Tỷ lệ tương tác</h4>
-                    <div class="chart-bar">
-                        <div class="chart-label">Lượt thích</div>
-                        <div class="chart-track">
-                            <div class="chart-fill" style="width: ${videoInfo.analysis.engagement.likeRate.replace('%','')}%"></div>
-                        </div>
-                        <div class="chart-value">${videoInfo.analysis.engagement.likeRate}</div>
-                    </div>
-                    <div class="chart-bar">
-                        <div class="chart-label">Bình luận</div>
-                        <div class="chart-track">
-                            <div class="chart-fill" style="width: ${videoInfo.analysis.engagement.commentRate.replace('%','')*100}%"></div>
-                        </div>
-                        <div class="chart-value">${videoInfo.analysis.engagement.commentRate}</div>
-                    </div>
-                    <div class="chart-bar">
-                        <div class="chart-label">Tổng tương tác</div>
-                        <div class="chart-track">
-                            <div class="chart-fill" style="width: ${videoInfo.analysis.engagement.engagementRate.replace('%','')}%"></div>
-                        </div>
-                        <div class="chart-value">${videoInfo.analysis.engagement.engagementRate}</div>
-                    </div>
-                </div>
-                
-                <div class="chart-box">
-                    <h4><i class="fas fa-tachometer-alt"></i> Điểm số phổ biến</h4>
-                    <div class="score-display">
-                        <div class="score-circle">
-                            <div class="score-text">${videoInfo.analysis.engagement.popularityScore}</div>
-                        </div>
-                        <div class="score-info">
-                            <p><strong>Thuật toán tính:</strong></p>
-                            <p>(Lượt xem/ngày × 70%) + (Tỷ lệ tương tác × 30%)</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            ${videoInfo.channel ? `
-                <div class="channel-stats">
-                    <h3><i class="fas fa-broadcast-tower"></i> Thống kê kênh</h3>
-                    <div class="channel-grid">
-                        <div class="channel-stat">
-                            <i class="fas fa-users"></i>
-                            <div>
-                                <strong>${videoInfo.channel.subscriberCount}</strong>
-                                <small>Người đăng ký</small>
-                            </div>
-                        </div>
-                        <div class="channel-stat">
-                            <i class="fas fa-video"></i>
-                            <div>
-                                <strong>${videoInfo.channel.videoCount}</strong>
-                                <small>Video</small>
-                            </div>
-                        </div>
-                        <div class="channel-stat">
-                            <i class="fas fa-eye"></i>
-                            <div>
-                                <strong>${videoInfo.channel.viewCount}</strong>
-                                <small>Lượt xem</small>
-                            </div>
-                        </div>
-                        <div class="channel-stat">
-                            <i class="fas fa-calendar"></i>
-                            <div>
-                                <strong>${formatDate(videoInfo.channel.publishedAt)}</strong>
-                                <small>Tham gia</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ` : ''}
         </div>
     `;
 }
@@ -688,157 +492,24 @@ function createAnalysisTab(videoInfo) {
     return `
         <div class="analysis-container">
             <div class="analysis-card">
-                <h3><i class="fas fa-calendar-check"></i> Phân tích thời gian</h3>
-                <div class="analysis-grid">
-                    <div class="analysis-item">
-                        <div class="analysis-icon" style="background: #3498db;">
-                            <i class="fas fa-birthday-cake"></i>
-                        </div>
-                        <div>
-                            <strong>${videoInfo.analysis.age.daysOld} ngày tuổi</strong>
-                            <p>Đã đăng ${videoInfo.analysis.age.yearsOld} năm, ${videoInfo.analysis.age.monthsOld} tháng trước</p>
-                        </div>
-                    </div>
-                    <div class="analysis-item">
-                        <div class="analysis-icon" style="background: #2ecc71;">
-                            <i class="fas fa-fire"></i>
-                        </div>
-                        <div>
-                            <strong>${videoInfo.analysis.age.ageDescription}</strong>
-                            <p>${videoInfo.analysis.age.daysOld < 30 ? 'Video còn mới và có tiềm năng viral' : 'Video đã ổn định về lượng xem'}</p>
-                        </div>
-                    </div>
-                    <div class="analysis-item">
-                        <div class="analysis-icon" style="background: #9b59b6;">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div>
-                            <strong>${Math.round(videoInfo.statistics.viewCountRaw / videoInfo.analysis.age.daysOld).toLocaleString()}</strong>
-                            <p>Lượt xem trung bình mỗi ngày</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="analysis-card">
                 <h3><i class="fas fa-search"></i> Phân tích SEO</h3>
                 <table class="analysis-table">
-                    <tr>
-                        <td><i class="fas fa-heading"></i> Tiêu đề</td>
-                        <td>${videoInfo.analysis.seo.titleLength} ký tự</td>
-                        <td>${videoInfo.analysis.seo.titleLength > 60 ? '🔴 Quá dài' : videoInfo.analysis.seo.titleLength > 50 ? '🟡 Tốt' : '🟢 Tối ưu'}</td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-align-left"></i> Mô tả</td>
-                        <td>${videoInfo.analysis.seo.descriptionWordCount} từ</td>
-                        <td>${videoInfo.analysis.seo.descriptionWordCount > 300 ? '🟢 Tốt' : videoInfo.analysis.seo.descriptionWordCount > 100 ? '🟡 Trung bình' : '🔴 Quá ngắn'}</td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-tags"></i> Mật độ Tags</td>
-                        <td>${videoInfo.analysis.seo.tagDensity}</td>
-                        <td>${parseFloat(videoInfo.analysis.seo.tagDensity) > 5 ? '🟢 Tốt' : '🟡 Trung bình'}</td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-hashtag"></i> Số lượng Tags</td>
-                        <td>${videoInfo.categorization.tagCount} tags</td>
-                        <td>${videoInfo.categorization.tagCount >= 5 ? '🟢 Tối ưu' : '🔴 Cần thêm tags'}</td>
-                    </tr>
+                    <tr><td>Độ dài tiêu đề:</td><td>${videoInfo.analysis.seo.titleLength} ký tự</td></tr>
+                    <tr><td>Số từ mô tả:</td><td>${videoInfo.analysis.seo.descriptionWordCount} từ</td></tr>
+                    <tr><td>Số lượng Tags:</td><td>${videoInfo.categorization.tagCount}</td></tr>
                 </table>
-            </div>
-            
-            <div class="analysis-card">
-                <h3><i class="fas fa-lightbulb"></i> Đề xuất cải thiện</h3>
-                <div class="recommendations">
-                    ${getRecommendations(videoInfo).map(rec => `
-                        <div class="recommendation ${rec.priority}">
-                            <i class="fas fa-${rec.icon}"></i>
-                            <div>
-                                <strong>${rec.title}</strong>
-                                <p>${rec.description}</p>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
             </div>
         </div>
     `;
 }
 
-function getRecommendations(videoInfo) {
-    const recs = [];
-    
-    if (videoInfo.categorization.tagCount < 5) {
-        recs.push({
-            priority: 'high',
-            icon: 'exclamation-triangle',
-            title: 'Thêm nhiều tags hơn',
-            description: `Video chỉ có ${videoInfo.categorization.tagCount} tags. YouTube khuyến nghị 10-15 tags để tối ưu tìm kiếm.`
-        });
-    }
-    
-    if (videoInfo.analysis.seo.descriptionWordCount < 150) {
-        recs.push({
-            priority: 'medium',
-            icon: 'file-alt',
-            title: 'Mở rộng mô tả',
-            description: 'Mô tả quá ngắn. Thêm từ khóa, timestamps, link liên kết để tăng thời gian xem.'
-        });
-    }
-    
-    if (videoInfo.contentDetails.caption === 'Không có phụ đề') {
-        recs.push({
-            priority: 'low',
-            icon: 'closed-captioning',
-            title: 'Thêm phụ đề',
-            description: 'Video không có phụ đề. Thêm phụ đề để tiếp cận khán giả khiếm thính và tăng SEO.'
-        });
-    }
-    
-    if (parseFloat(videoInfo.analysis.engagement.likeRate) < 3) {
-        recs.push({
-            priority: 'high',
-            icon: 'thumbs-up',
-            title: 'Cải thiện tỷ lệ thích',
-            description: `Tỷ lệ thích chỉ ${videoInfo.analysis.engagement.likeRate}. Xem lại nội dung để tăng tương tác.`
-        });
-    }
-    
-    if (recs.length === 0) {
-        recs.push({
-            priority: 'low',
-            icon: 'check-circle',
-            title: 'Video đã tối ưu tốt',
-            description: 'Video của bạn đã đáp ứng hầu hết các tiêu chí tối ưu của YouTube.'
-        });
-    }
-    
-    return recs;
-}
-
-function createRawDataTab() {
+function createRawDataTab(videoInfo) {
     return `
         <div class="rawdata-container">
-            <h3><i class="fas fa-database"></i> Dữ liệu JSON gốc từ YouTube API</h3>
-            <p class="rawdata-info">
-                Dưới đây là toàn bộ dữ liệu thô nhận được từ YouTube API.<br>
-                Bạn có thể copy để phân tích chuyên sâu hoặc sử dụng cho các mục đích khác.
-            </p>
-            
-            <div class="rawdata-actions">
-                <button onclick="copyRawData()" class="btn-copy">
-                    <i class="fas fa-copy"></i> Copy JSON
-                </button>
-                <button onclick="downloadRawData()" class="btn-download">
-                    <i class="fas fa-download"></i> Tải file JSON
-                </button>
-                <button onclick="toggleRawData()" class="btn-toggle">
-                    <i class="fas fa-expand"></i> Hiển thị/Ẩn
-                </button>
-            </div>
-            
-            <div id="rawdata-content" class="rawdata-content">
-                <pre><code>${JSON.stringify(fullVideoData, null, 2)}</code></pre>
-            </div>
+            <h3><i class="fas fa-code"></i> Dữ liệu JSON gốc</h3>
+            <pre style="background: #f4f4f4; padding: 15px; border-radius: 5px; overflow: auto; max-height: 400px;">
+                ${JSON.stringify(fullVideoData, null, 2)}
+            </pre>
         </div>
     `;
 }
@@ -853,11 +524,9 @@ function initTabs() {
     
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            // Xóa active cũ
             tabBtns.forEach(b => b.classList.remove('active'));
             tabPanes.forEach(p => p.classList.remove('active'));
             
-            // Thêm active mới
             btn.classList.add('active');
             const tabId = btn.getAttribute('data-tab');
             document.getElementById(`${tabId}-tab`).classList.add('active');
@@ -865,49 +534,24 @@ function initTabs() {
     });
 }
 
-function copyRawData() {
-    const rawData = JSON.stringify(fullVideoData, null, 2);
-    navigator.clipboard.writeText(rawData)
-        .then(() => {
-            alert('✅ Đã copy toàn bộ dữ liệu vào clipboard!');
-        })
-        .catch(err => {
-            console.error('Copy failed:', err);
-            alert('❌ Lỗi khi copy dữ liệu');
-        });
-}
-
-function downloadRawData() {
-    const dataStr = JSON.stringify(fullVideoData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `youtube_data_${fullVideoData.id}_${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-function toggleRawData() {
-    const content = document.getElementById('rawdata-content');
-    if (content.style.display === 'none') {
-        content.style.display = 'block';
-    } else {
-        content.style.display = 'none';
-    }
-}
-
 // ============================================
-// 7. HÀM CHÍNH LẤY THÔNG TIN
+// 7. HÀM CHÍNH LẤY THÔNG TIN (ĐÃ SỬA GIỚI HẠN 3 LẦN)
 // ============================================
 
 async function getFullVideoInfo() {
     const youtubeUrl = youtubeUrlInput.value.trim();
     const apiKey = apiKeyInput.value.trim();
-    
-    // Kiểm tra input
+
+    // --- KIỂM TRA LƯỢT DÙNG MIỄN PHÍ ---
+    let usageCount = parseInt(localStorage.getItem('yt_usage_count') || '0');
+    let isPaid = localStorage.getItem('yt_is_paid') === 'true';
+
+    if (!isPaid && usageCount >= 3) {
+        showPricingModal();
+        return; 
+    }
+    // ----------------------------------
+
     if (!youtubeUrl) {
         alert('📝 Vui lòng dán URL YouTube vào ô trên cùng');
         return;
@@ -918,114 +562,92 @@ async function getFullVideoInfo() {
         return;
     }
     
-    // Lấy Video ID
     const videoId = extractVideoId(youtubeUrl);
     if (!videoId) {
         alert('❌ URL YouTube không hợp lệ. Vui lòng kiểm tra lại!');
         return;
     }
     
-    // Hiển thị loading
     loadingDiv.style.display = 'block';
     resultDiv.style.display = 'none';
     resultDiv.innerHTML = '';
     
     try {
-        // 1. Lấy toàn bộ thông tin video
         console.log('🔄 Đang tải dữ liệu từ YouTube API...');
         const videoData = await fetchAllVideoInfo(videoId, apiKey);
         fullVideoData = videoData;
         
-        // 2. Lấy thông tin danh mục
         const categoryName = await fetchVideoCategory(videoData.snippet.categoryId, apiKey);
         
-        // 3. Lấy thông tin kênh (nếu có)
         let channelInfo = null;
         if (videoData.snippet.channelId) {
             channelInfo = await fetchChannelInfo(videoData.snippet.channelId, apiKey);
         }
         
-        // 4. Phân tích dữ liệu
         const analyzedData = analyzeVideoData(videoData, categoryName, channelInfo);
         
-        // 5. Hiển thị kết quả
+        // --- TĂNG LƯỢT DÙNG KHI THÀNH CÔNG ---
+        if (!isPaid) {
+            usageCount++;
+            localStorage.setItem('yt_usage_count', usageCount);
+            console.log("Số lần đã dùng: " + usageCount);
+        }
+        // ------------------------------------
+
         loadingDiv.style.display = 'none';
         resultDiv.innerHTML = createTabInterface(analyzedData);
         resultDiv.style.display = 'block';
         
-        // 6. Khởi tạo tabs
         setTimeout(initTabs, 100);
-        
-        console.log('✅ Đã tải xong toàn bộ thông tin!');
         
     } catch (error) {
         loadingDiv.style.display = 'none';
-        resultDiv.innerHTML = `
-            <div class="error">
-                <h3><i class="fas fa-exclamation-triangle"></i> LỖI HỆ THỐNG</h3>
-                <p><strong>${error.message}</strong></p>
-                <div class="error-details">
-                    <h4>Nguyên nhân có thể:</h4>
-                    <ul>
-                        <li>API Key không hợp lệ hoặc đã hết hạn</li>
-                        <li>Video bị xóa hoặc chế độ riêng tư</li>
-                        <li>Giới hạn API quota (vượt quá 100 requests/ngày)</li>
-                        <li>Vấn đề kết nối mạng</li>
-                    </ul>
-                    <h4>Cách khắc phục:</h4>
-                    <ol>
-                        <li>Kiểm tra lại API Key trong Google Cloud Console</li>
-                        <li>Đảm bảo video công khai và tồn tại</li>
-                        <li>Chờ 24h nếu đã vượt quota miễn phí</li>
-                        <li>Thử lại URL YouTube khác</li>
-                    </ol>
-                </div>
-            </div>
-        `;
+        resultDiv.innerHTML = `<div class="error"><h3>LỖI: ${error.message}</h3></div>`;
         resultDiv.style.display = 'block';
-        console.error('❌ Error:', error);
     }
+}
+
+// Hàm hiển thị bảng giá khi hết lượt
+function showPricingModal() {
+    const paywallHtml = `
+        <div id="paywall-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;justify-content:center;align-items:center;z-index:9999;font-family:sans-serif;">
+            <div style="background:white;padding:40px;border-radius:20px;max-width:500px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+                <h2 style="color:#ff0000;font-size:28px;">💎 Hết lượt dùng miễn phí</h2>
+                <p style="font-size:18px;color:#555;">Bạn đã sử dụng hết 3 lượt tra cứu miễn phí. Vui lòng nâng cấp để tiếp tục tra cứu không giới hạn.</p>
+                <div style="display:flex;gap:15px;margin-top:30px;">
+                    <div style="flex:1;border:1px solid #ddd;padding:20px;border-radius:15px;">
+                        <h3>Gói Tháng</h3>
+                        <p style="font-size:22px;font-weight:bold;color:#ff0000;">50.000đ</p>
+                        <button onclick="window.open('https://momo.vn','_blank')" style="background:#333;color:white;border:none;padding:10px;width:100%;border-radius:5px;cursor:pointer;">MUA NGAY</button>
+                    </div>
+                    <div style="flex:1;border:2px solid #ff0000;padding:20px;border-radius:15px;position:relative;">
+                        <span style="position:absolute;top:-10px;right:10px;background:#ff0000;color:white;font-size:10px;padding:2px 5px;border-radius:5px;">BEST</span>
+                        <h3>Gói Năm</h3>
+                        <p style="font-size:22px;font-weight:bold;color:#ff0000;">550.000đ</p>
+                        <button onclick="window.open('https://momo.vn','_blank')" style="background:#ff0000;color:white;border:none;padding:10px;width:100%;border-radius:5px;cursor:pointer;">MUA NGAY</button>
+                    </div>
+                </div>
+                <button onclick="location.reload()" style="margin-top:20px;background:none;border:none;color:#999;text-decoration:underline;cursor:pointer;">Quay lại sau</button>
+            </div>
+        </div>`;
+    document.body.insertAdjacentHTML('beforeend', paywallHtml);
 }
 
 // ============================================
 // 8. KHỞI TẠO ỨNG DỤNG
 // ============================================
 
-// Thêm sự kiện click cho nút
 getInfoBtn.addEventListener('click', getFullVideoInfo);
 
-// Thêm sự kiện Enter cho input
 youtubeUrlInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        getFullVideoInfo();
-    }
+    if (e.key === 'Enter') getFullVideoInfo();
 });
 
-// Thêm sự kiện paste tự động
-youtubeUrlInput.addEventListener('paste', (e) => {
-    setTimeout(() => {
-        if (apiKeyInput.value) {
-            getFullVideoInfo();
-        }
-    }, 500);
-});
-
-// Hướng dẫn khi trang load
-console.log('🎬 YouTube Full Info Extractor v2.0');
-console.log('📊 Có thể lấy 25+ loại thông tin khác nhau');
-console.log('👉 Hướng dẫn: Dán API Key → Dán URL → Click LẤY THÔNG TIN');
-
-// Tự động fill API Key từ localStorage nếu có
 window.addEventListener('load', () => {
     const savedApiKey = localStorage.getItem('youtube_api_key');
-    if (savedApiKey) {
-        apiKeyInput.value = savedApiKey;
-    }
-    
-    // Lưu API Key khi người dùng nhập
-    apiKeyInput.addEventListener('change', () => {
-        if (apiKeyInput.value.trim()) {
-            localStorage.setItem('youtube_api_key', apiKeyInput.value.trim());
-        }
-    });
+    if (savedApiKey) apiKeyInput.value = savedApiKey;
+});
+
+apiKeyInput.addEventListener('change', () => {
+    localStorage.setItem('youtube_api_key', apiKeyInput.value.trim());
 });
