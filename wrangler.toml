@@ -1,6 +1,7 @@
 name = "youtube-extractor-backend"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
+compatibility_flags = [ "nodejs_compat" ]
 
 [vars]
 FRONTEND_URL = "https://your-frontend-url.pages.dev"
