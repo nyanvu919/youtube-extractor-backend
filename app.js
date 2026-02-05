@@ -665,3 +665,70 @@ window.addEventListener('load', () => {
 apiKeyInput.addEventListener('change', () => {
     localStorage.setItem('youtube_api_key', apiKeyInput.value.trim());
 });
+
+let currentAuthAction = 'login';
+
+function showAuthModal(action) {
+    currentAuthAction = action;
+    document.getElementById('modal-title').innerText = action === 'login' ? 'Đăng nhập' : 'Đăng ký';
+    document.getElementById('auth-modal').style.display = 'flex';
+}
+
+async function handleAuthSubmit() {
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    
+    const res = await fetch(`${BACKEND_URL}/api/auth/${currentAuthAction}`, {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+    });
+    
+    const data = await res.json();
+    if (res.ok) {
+        if (currentAuthAction === 'login') {
+            localStorage.setItem('access_token', data.access_token);
+            location.reload();
+        } else {
+            alert('Đăng ký thành công! Hãy đăng nhập.');
+            showAuthModal('login');
+        }
+    } else {
+        alert(data.msg || data.error_description || 'Lỗi rồi!');
+    }
+}
+
+function checkLogin() {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+        document.getElementById('user-logged-in').style.display = 'block';
+        document.getElementById('user-logged-out').style.display = 'none';
+        // (Tùy chọn) Gọi API lấy email để hiện lên
+    }
+}
+
+function logout() {
+    localStorage.removeItem('access_token');
+    location.reload();
+}
+
+// Chỉnh sửa lại hàm fetchAllVideoInfo để gửi Token
+async function fetchAllVideoInfo(youtubeUrl, apiKey) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        alert('Vui lòng đăng nhập để sử dụng!');
+        showAuthModal('login');
+        throw new Error('AUTH_REQUIRED');
+    }
+
+    const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ youtubeUrl, userApiKey: apiKey })
+    });
+    // ... giữ nguyên phần xử lý response cũ ...
+}
+
+window.onload = checkLogin;
