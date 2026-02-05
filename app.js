@@ -1,7 +1,7 @@
 // ============================================
 // YOUTUBE FULL INFO EXTRACTOR - LẤY MỌI THÔNG TIN
 // ============================================
-
+const BACKEND_URL = "https://yt-api-proxy.nyaochen9.workers.dev";
 // Lấy các phần tử HTML
 const youtubeUrlInput = document.getElementById('youtubeUrl');
 const apiKeyInput = document.getElementById('apiKey');
@@ -94,16 +94,28 @@ function formatBytes(bytes) {
 // 3. HÀM LẤY TẤT CẢ THÔNG TIN
 // ============================================
 
-async function fetchAllVideoInfo(videoId, apiKey) {
+async function fetchAllVideoInfo(youtubeUrl, apiKey) {
     try {
-        const response = await fetch(
-            `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics,status,topicDetails,recordingDetails,liveStreamingDetails,localizations&id=${videoId}&key=${apiKey}`
-        );
-        
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.status}`);
+        const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                youtubeUrl: youtubeUrl,
+                userApiKey: apiKey
+            })
+        });
+
+        // Nếu hết lượt dùng (Backend trả về 402)
+        if (response.status === 402) {
+            showPricingModal(); // Hiện bảng giá
+            throw new Error('LIMIT_REACHED');
         }
-        
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Lỗi: ${response.status}`);
+        }
+
         const data = await response.json();
         
         if (!data.items || data.items.length === 0) {
@@ -113,7 +125,9 @@ async function fetchAllVideoInfo(videoId, apiKey) {
         return data.items[0];
         
     } catch (error) {
-        console.error('Error fetching video info:', error);
+        if (error.message !== 'LIMIT_REACHED') {
+            console.error('Error fetching video info:', error);
+        }
         throw error;
     }
 }
@@ -574,7 +588,7 @@ async function getFullVideoInfo() {
     
     try {
         console.log('🔄 Đang tải dữ liệu từ YouTube API...');
-        const videoData = await fetchAllVideoInfo(videoId, apiKey);
+        const videoData = await fetchAllVideoInfo(youtubeUrl, apiKey);
         fullVideoData = videoData;
         
         const categoryName = await fetchVideoCategory(videoData.snippet.categoryId, apiKey);
