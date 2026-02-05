@@ -20,6 +20,27 @@
 
         <!-- MAIN CONTENT -->
         <div class="main">
+            <div id="auth-section" style="text-align: right; padding: 10px;">
+    <div id="user-logged-in" style="display:none;">
+        <span id="user-email"></span>
+        <button onclick="logout()" style="cursor:pointer;">Đăng xuất</button>
+    </div>
+    <div id="user-logged-out">
+        <button onclick="showAuthModal('login')" style="cursor:pointer;">Đăng nhập</button>
+        <button onclick="showAuthModal('signup')" style="cursor:pointer;">Đăng ký</button>
+    </div>
+</div>
+
+<!-- Modal Đăng nhập/Đăng ký -->
+<div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:30px; border-radius:10px; width:300px; text-align:center;">
+        <h2 id="modal-title">Đăng nhập</h2>
+        <input type="email" id="auth-email" placeholder="Email" style="width:100%; margin-bottom:10px; padding:10px;">
+        <input type="password" id="auth-password" placeholder="Mật khẩu" style="width:100%; margin-bottom:10px; padding:10px;">
+        <button id="auth-submit-btn" onclick="handleAuthSubmit()" style="width:100%; padding:10px; background:#ff0000; color:white; border:none; border-radius:5px; cursor:pointer;">Xác nhận</button>
+        <button onclick="document.getElementById('auth-modal').style.display='none'" style="margin-top:10px; background:none; border:none; color:blue; cursor:pointer;">Hủy</button>
+    </div>
+</div>
             <!-- INPUT SECTION -->
             <div class="input-section">
                 <div class="input-group">
