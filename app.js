@@ -692,9 +692,11 @@ async function handleAuthSubmit() {
             alert('Đăng ký thành công! Hãy đăng nhập.');
             showAuthModal('login');
         }
-    } else {
-        alert(data.msg || data.error_description || 'Lỗi rồi!');
-    }
+   } else {
+    // Hiện lỗi chi tiết từ server hoặc log ra console
+    console.error("Auth Error Data:", data);
+    alert("Lỗi từ Server: " + (data.msg || data.error_description || data.error || JSON.stringify(data)));
+   }
 }
 
 function checkLogin() {
