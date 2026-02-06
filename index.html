@@ -8,142 +8,150 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <!-- HEADER -->
-        <div class="header">
-            <div class="logo">
-                <i class="fab fa-youtube"></i>
-                <h1>YouTube Info Extractor</h1>
-            </div>
-            <p class="subtitle">Dán link YouTube để lấy toàn bộ thông tin video</p>
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="logo">
+            <i class="fab fa-youtube"></i>
+            <h1>YouTube Info Extractor</h1>
+        </div>
+        <p class="subtitle">Dán link YouTube để lấy toàn bộ thông tin video</p>
+    </div>
+
+    <!-- AUTH -->
+    <div id="auth-wrapper" class="auth-wrapper">
+        <div id="user-logged-out" class="auth-group">
+            <button onclick="showAuthModal('login')" class="btn-auth btn-login">
+                <i class="fas fa-sign-in-alt"></i> Đăng nhập
+            </button>
+            <button onclick="showAuthModal('signup')" class="btn-auth btn-signup">
+                Đăng ký
+            </button>
         </div>
 
-        <!-- MAIN CONTENT -->
-        <div class="main">
-            
-            <!-- AUTH SECTION: Đăng nhập/Đăng ký/Email -->
-            <div id="auth-wrapper" class="auth-wrapper">
-                <div id="user-logged-out" class="auth-group">
-                    <button onclick="showAuthModal('login')" class="btn-auth btn-login">
-                        <i class="fas fa-sign-in-alt"></i> Đăng nhập
-                    </button>
-                    <button onclick="showAuthModal('signup')" class="btn-auth btn-signup">
-                        Đăng ký
-                    </button>
-                </div>
-                
-                <div id="user-logged-in" class="auth-group" style="display:none;">
-                    <div class="user-info-chip">
-                        <i class="fas fa-user-circle"></i>
-                        <span id="user-email"></span>
-                    </div>
-                    <button onclick="logout()" class="btn-auth btn-logout">
-                        Thoát
-                    </button>
-                </div>
+        <div id="user-logged-in" class="auth-group" style="display:none;">
+            <div class="user-info-chip">
+                <i class="fas fa-user-circle"></i>
+                <span id="user-email"></span>
+            </div>
+            <button onclick="logout()" class="btn-auth btn-logout">
+                Thoát
+            </button>
+        </div>
+    </div>
+
+    <!-- AUTH MODAL -->
+    <div id="auth-modal" class="auth-modal" style="display:none;">
+        <div class="auth-box">
+            <h2 id="modal-title">Đăng nhập</h2>
+            <input type="email" id="auth-email" placeholder="Email">
+            <input type="password" id="auth-password" placeholder="Mật khẩu">
+            <button id="auth-submit-btn" onclick="handleAuthSubmit()" class="btn-primary">
+                Xác nhận
+            </button>
+            <button onclick="document.getElementById('auth-modal').style.display='none'" class="btn-cancel">
+                Hủy
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- INPUT -->
+        <div class="input-section">
+
+            <div class="input-group">
+                <i class="fas fa-link"></i>
+                <input type="text" id="youtubeUrl" placeholder="Dán URL YouTube vào đây...">
             </div>
 
-            <!-- INPUT SECTION -->
-            <div class="input-section">
-                <div class="input-group">
-                    <i class="fas fa-link"></i>
-                    <input type="text" id="youtubeUrl" 
-                           placeholder="Dán URL YouTube vào đây... Ví dụ: https://www.youtube.com/watch?v=...">
-                </div>
-                
-                <div class="api-key-input">
-                    <label for="apiKey">
-                        <i class="fas fa-key"></i> API Key của bạn:
-                    </label>
-                    <input type="text" id="apiKey" 
-                           placeholder="Dán API Key từ Google Cloud Console">
-                </div>
-                
-                <button id="getInfoBtn" class="btn-primary">
-                    <i class="fas fa-search"></i> LẤY THÔNG TIN
+            <div class="api-key-input">
+                <label for="apiKey">
+                    <i class="fas fa-key"></i> API Key của bạn:
+                </label>
+                <input type="text" id="apiKey" placeholder="Dán API Key từ Google Cloud Console">
+            </div>
+
+            <button id="getInfoBtn" class="btn-primary">
+                <i class="fas fa-search"></i> LẤY THÔNG TIN
+            </button>
+
+            <div class="export-buttons">
+                <button id="exportJson" class="btn-secondary">
+                    <i class="fas fa-file-export"></i> Xuất JSON
                 </button>
-                
-                <div class="export-buttons">
-                    <button id="exportJson" class="btn-secondary">
-                        <i class="fas fa-file-export"></i> Xuất JSON
-                    </button>
-                    <button id="exportCSV" class="btn-secondary">
-                        <i class="fas fa-file-csv"></i> Xuất CSV
-                    </button>
-                    <button id="exportPDF" class="btn-secondary">
-                        <i class="fas fa-file-pdf"></i> Xuất PDF
-                    </button>
-                </div>
+                <button id="exportCSV" class="btn-secondary">
+                    <i class="fas fa-file-csv"></i> Xuất CSV
+                </button>
+                <button id="exportPDF" class="btn-secondary">
+                    <i class="fas fa-file-pdf"></i> Xuất PDF
+                </button>
             </div>
 
-            <!-- LOADING SECTION -->
-            <div id="loading" class="loading">
-                <div class="spinner"></div>
-                <p>Đang lấy thông tin từ YouTube...</p>
+        </div>
+
+        <!-- LOADING -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Đang lấy thông tin từ YouTube...</p>
+        </div>
+
+        <!-- RESULT -->
+        <div id="result" class="result"></div>
+
+        <!-- INSTRUCTIONS -->
+        <div class="instructions">
+            <h3><i class="fas fa-key"></i> Cách lấy YouTube API Key miễn phí</h3>
+
+            <div class="step-guide">
+                <p><strong>Bước 1:</strong> Truy cập <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></p>
+
+                <p><strong>Bước 2:</strong> Tạo Project mới (New Project)</p>
+
+                <p><strong>Bước 3:</strong> Tìm và bật <b>YouTube Data API v3</b></p>
+
+                <p><strong>Bước 4:</strong> Vào <b>Credentials</b> → Create Credentials → API Key</p>
+
+                <p><strong>Bước 5:</strong> Copy API Key (AIza...) và dán vào ô trên</p>
             </div>
 
-            <!-- RESULTS SECTION -->
-            <div id="result" class="result">
-                <!-- Dữ liệu sẽ được chèn vào đây bởi JavaScript -->
+            <div class="features">
+                <h4><i class="fas fa-star"></i> Tính năng nổi bật:</h4>
+                <ul>
+                    <li>Lấy 25+ loại thông tin video</li>
+                    <li>Phân tích SEO</li>
+                    <li>Xem thống kê biểu đồ</li>
+                    <li>Xuất JSON, CSV, PDF</li>
+                    <li>Lưu API Key tự động</li>
+                </ul>
             </div>
 
-            <!-- INSTRUCTIONS SECTION: Hướng dẫn lấy API chi tiết -->
-            <div class="instructions">
-                <h3><i class="fas fa-key"></i> Cách lấy YouTube API Key miễn phí (Chi tiết):</h3>
-                <div class="step-guide">
-                    <p><strong>Bước 1:</strong> Truy cập <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> và đăng nhập Gmail.</p>
-                    
-                    <p><strong>Bước 2: Tạo dự án mới:</strong>
-                        <br> - Nhấn chọn dự án ở góc trên cùng bên trái.
-                        <br> - Chọn <b>"New Project"</b>, đặt tên bất kỳ và nhấn <b>"Create"</b>.
-                    </p>
-
-                    <p><strong>Bước 3: Bật YouTube API:</strong>
-                        <br> - Tìm kiếm <b>"YouTube Data API v3"</b> trên thanh tìm kiếm.
-                        <br> - Chọn kết quả và nhấn nút xanh <b>"ENABLE"</b>.
-                    </p>
-
-                    <p><strong>Bước 4: Tạo mã Key:</strong>
-                        <br> - Vào mục <b>"Credentials"</b> ở menu bên trái.
-                        <br> - Nhấn <b>"+ CREATE CREDENTIALS"</b> -> chọn <b>"API key"</b>.
-                    </p>
-
-                    <p><strong>Bước 5: Hoàn tất:</strong>
-                        <br> - Copy mã <i>AIza...</i> hiện ra và dán vào ô nhập phía trên.
-                    </p>
-                </div>
-
-                <div class="api-note" style="background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin-top: 20px; font-size: 13px; color: #6d4c41; border-radius: 8px;">
-                    <i class="fas fa-info-circle"></i> <b>Lưu ý:</b> Google cung cấp 10.000 đơn vị miễn phí mỗi ngày. Nếu hết, hãy tạo Key mới hoặc chờ 24h để reset.
-                </div>
+            <div class="api-note">
+                <i class="fas fa-info-circle"></i>
+                Google cho phép 10.000 request/ngày miễn phí.
             </div>
         </div>
 
-        <!-- FOOTER -->
-        <footer>
-            <p>© 2024 YouTube Info Extractor - Công cụ sử dụng YouTube Data API v3</p>
-            <p class="warning">
-                <i class="fas fa-exclamation-triangle"></i>
-                <strong>Lưu ý:</strong> Không chia sẻ API Key với người khác để đảm bảo bảo mật.
-            </p>
-        </footer>
     </div>
 
-    <!-- AUTH MODAL: Đăng nhập / Đăng ký -->
-    <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">
-        <div style="background:white; padding:40px; border-radius:15px; width:350px; text-align:center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-            <h2 id="modal-title" style="margin-bottom:20px; color:#333;">Đăng nhập</h2>
-            <input type="email" id="auth-email" placeholder="Địa chỉ Email" style="width:100%; margin-bottom:15px; padding:12px; border:1px solid #ddd; border-radius:8px;">
-            <input type="password" id="auth-password" placeholder="Mật khẩu" style="width:100%; margin-bottom:20px; padding:12px; border:1px solid #ddd; border-radius:8px;">
-            <button id="auth-submit-btn" onclick="handleAuthSubmit()" style="width:100%; padding:14px; background:#ff0000; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;">Xác nhận</button>
-            <button onclick="document.getElementById('auth-modal').style.display='none'" style="margin-top:15px; background:none; border:none; color:#666; text-decoration:underline; cursor:pointer;">Hủy bỏ</button>
-        </div>
-    </div>
+    <!-- FOOTER -->
+    <footer>
+        <p>© 2024 YouTube Info Extractor - YouTube Data API v3</p>
+        <p class="warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            Không chia sẻ API Key với người khác.
+        </p>
+    </footer>
 
-    <!-- JavaScript Files -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script src="app.js"></script>
+</div>
+
+<!-- JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="app.js"></script>
+
 </body>
 </html>
