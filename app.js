@@ -700,11 +700,30 @@ async function handleAuthSubmit() {
 }
 
 function checkLogin() {
+    // --- ĐOẠN MỚI: XỬ LÝ TOKEN TỪ EMAIL XÁC THỰC ---
+    const hash = window.location.hash; // Lấy phần sau dấu # trên URL
+    if (hash && hash.includes("access_token=")) {
+        // Biến chuỗi #access_token=abc... thành đối tượng để dễ lấy dữ liệu
+        const params = new URLSearchParams(hash.replace("#", "?"));
+        const token = params.get("access_token");
+        const email = params.get("email") || "User"; // Tùy phiên bản Supabase có trả về hay không
+
+        if (token) {
+            localStorage.setItem('access_token', token);
+            localStorage.setItem('user_email', email);
+            // Xóa cái đống loằng ngoằng trên URL cho đẹp
+            window.history.replaceState(null, null, window.location.pathname);
+            alert("Xác thực email thành công! Chào mừng bạn.");
+        }
+    }
+    // --- KẾT THÚC ĐOẠN MỚI ---
+
     const token = localStorage.getItem('access_token');
+    const email = localStorage.getItem('user_email');
     if (token) {
         document.getElementById('user-logged-in').style.display = 'block';
         document.getElementById('user-logged-out').style.display = 'none';
-        // (Tùy chọn) Gọi API lấy email để hiện lên
+        document.getElementById('user-email').innerText = email !== "null" ? email : "Đã đăng nhập";
     }
 }
 
