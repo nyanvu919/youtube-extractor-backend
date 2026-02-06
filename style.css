@@ -1090,3 +1090,71 @@ footer {
     50% { transform: scale(1.05); }
     100% { transform: scale(1); }
 }
+
+/* Thiết kế cụm nút Auth */
+.auth-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 20px;
+    margin-bottom: 10px;
+}
+
+.auth-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Style chung cho nút */
+.btn-auth {
+    padding: 7px 15px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: 0.2s;
+}
+
+.btn-login {
+    background: transparent;
+    color: #065fd4; /* Màu xanh YouTube */
+    border: 1px solid #ddd;
+}
+
+.btn-login:hover {
+    background: #def1ff;
+    border-color: transparent;
+}
+
+.btn-signup {
+    background: #ff0000;
+    color: white;
+}
+
+.btn-signup:hover {
+    background: #cc0000;
+}
+
+.btn-logout {
+    background: #f2f2f2;
+    color: #606060;
+}
+
+/* Phần hiển thị Email sau khi đăng nhập */
+.user-info-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #f9f9f9;
+    padding: 5px 12px;
+    border-radius: 15px;
+    border: 1px solid #eee;
+    font-size: 13px;
+    color: #333;
+}
+
+.user-info-chip i {
+    font-size: 18px;
+    color: #ff0000;
+}
