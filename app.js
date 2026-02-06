@@ -119,16 +119,17 @@ function logout() {
 async function fetchAllVideoInfo(youtubeUrl, apiKey) {
     const token = localStorage.getItem('access_token');
     
-    // 1. Kiểm tra xem có token chưa
     if (!token) {
         alert('Vui lòng đăng nhập để sử dụng!');
         showAuthModal('login');
         throw new Error('AUTH_REQUIRED');
     }
 
-    const deviceId = getDeviceFingerprint(); 
+    // Lấy vân tay thiết bị (nếu hàm này chưa có thì xóa dòng này đi cũng được)
+    const deviceId = typeof getDeviceFingerprint === 'function' ? getDeviceFingerprint() : "unknown_device"; 
 
-    // 2. Gọi lên Backend
+    console.log("Đang gửi API Key:", apiKey); // Kiểm tra xem key có bị rỗng không
+
     const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
         method: 'POST',
         headers: { 
@@ -137,44 +138,41 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
         },
         body: JSON.stringify({ 
             youtubeUrl: youtubeUrl, 
-            userApiKey: apiKey,
+            userApiKey: apiKey.trim(), // Cắt khoảng trắng thừa
             deviceId: deviceId 
         })
     });
 
-    // 3. Xử lý lỗi Token hết hạn (Lỗi 401) - QUAN TRỌNG NHẤT
+    // 1. Kiểm tra lỗi từ Backend (Hết lượt, Hết hạn Token...)
     if (response.status === 401) {
-        alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
-        logout(); // Tự động đăng xuất
+        alert("Phiên đăng nhập hết hạn. Đang đăng xuất...");
+        logout();
         throw new Error("TOKEN_EXPIRED");
     }
-
-    // 4. Xử lý hết lượt dùng (Lỗi 402)
     if (response.status === 402) {
         showPricingModal();
         throw new Error('LIMIT_REACHED');
     }
 
     const data = await response.json();
+    console.log("Dữ liệu nhận từ Backend:", data); // <--- QUAN TRỌNG: Xem log này
 
-    // 5. Xử lý các lỗi khác từ Backend
-    if (!response.ok) {
-        console.error("Lỗi Backend trả về:", data);
-        throw new Error(data.error || data.message || "Lỗi hệ thống không xác định");
+    // 2. BẮT LỖI TỪ GOOGLE (Nguyên nhân chính gây ra lỗi undefined)
+    if (data.error) {
+        // Google thường trả về object error chi tiết
+        const googleMessage = data.error.message || JSON.stringify(data.error);
+        alert(`❌ LỖI API GOOGLE:\n${googleMessage}`);
+        throw new Error("GOOGLE_API_ERROR");
     }
 
-    // 6. Kiểm tra xem Google có trả về video không
+    // 3. Kiểm tra items
     if (!data.items || data.items.length === 0) {
-        console.warn("Dữ liệu Google:", data);
-        if (data.error) {
-             throw new Error(`Google API báo lỗi: ${data.error.message}`);
-        }
-        throw new Error('Không tìm thấy video này (hoặc Link sai).');
+        alert("⚠️ Không tìm thấy video!\nCó thể video này Riêng tư, hoặc Link bị sai.");
+        throw new Error("VIDEO_NOT_FOUND");
     }
 
     return data.items[0];
 }
-
 
 let selectedPlan = null;
 
