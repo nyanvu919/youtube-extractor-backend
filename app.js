@@ -118,6 +118,8 @@ function logout() {
 
 async function fetchAllVideoInfo(youtubeUrl, apiKey) {
     const token = localStorage.getItem('access_token');
+    
+    // 1. Kiểm tra xem có token chưa
     if (!token) {
         alert('Vui lòng đăng nhập để sử dụng!');
         showAuthModal('login');
@@ -126,6 +128,7 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
 
     const deviceId = getDeviceFingerprint(); 
 
+    // 2. Gọi lên Backend
     const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
         method: 'POST',
         headers: { 
@@ -139,14 +142,14 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
         })
     });
 
-    // 1. Xử lý lỗi 401 (Token hỏng/hết hạn) -> Quan trọng nhất với lỗi của bạn hiện tại
+    // 3. Xử lý lỗi Token hết hạn (Lỗi 401) - QUAN TRỌNG NHẤT
     if (response.status === 401) {
         alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
-        logout(); // Tự động đăng xuất để người dùng đăng nhập lại
+        logout(); // Tự động đăng xuất
         throw new Error("TOKEN_EXPIRED");
     }
 
-    // 2. Xử lý hết lượt dùng (402)
+    // 4. Xử lý hết lượt dùng (Lỗi 402)
     if (response.status === 402) {
         showPricingModal();
         throw new Error('LIMIT_REACHED');
@@ -154,19 +157,19 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
 
     const data = await response.json();
 
-    // 3. Xử lý lỗi hệ thống khác
+    // 5. Xử lý các lỗi khác từ Backend
     if (!response.ok) {
-        console.error("Lỗi Backend:", data);
-        throw new Error(data.error || data.message || `Lỗi Server: ${response.status}`);
+        console.error("Lỗi Backend trả về:", data);
+        throw new Error(data.error || data.message || "Lỗi hệ thống không xác định");
     }
 
-    // 4. Kiểm tra dữ liệu Google trả về
+    // 6. Kiểm tra xem Google có trả về video không
     if (!data.items || data.items.length === 0) {
-        console.warn("Google API Response:", data);
+        console.warn("Dữ liệu Google:", data);
         if (data.error) {
-             throw new Error(`Google API Lỗi: ${data.error.message}`);
+             throw new Error(`Google API báo lỗi: ${data.error.message}`);
         }
-        throw new Error('Không tìm thấy video (hoặc Link/API Key sai).');
+        throw new Error('Không tìm thấy video này (hoặc Link sai).');
     }
 
     return data.items[0];
