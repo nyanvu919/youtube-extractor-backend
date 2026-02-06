@@ -13,9 +13,10 @@ const resultDiv = document.getElementById('result');
 // Biến toàn cục lưu dữ liệu
 let fullVideoData = null;
 let currentAuthAction = 'login';
+let selectedPlan = null;
 
 // ============================================
-// 1. HÀM XỬ LÝ AUTH (ĐĂNG NHẬP / ĐĂNG KÝ / HIỂN THỊ)
+// 1. HÀM XỬ LÝ AUTH (ĐĂNG NHẬP / ĐĂNG KÝ)
 // ============================================
 
 function showAuthModal(action) {
@@ -52,12 +53,11 @@ async function handleAuthSubmit() {
         if (res.ok) {
             if (currentAuthAction === 'login') {
                 localStorage.setItem('access_token', data.access_token);
-                // LƯU EMAIL CHÍNH XÁC VÀO BỘ NHỚ
                 localStorage.setItem('user_email', data.user.email);
                 alert("Đăng nhập thành công!");
                 location.reload();
             } else {
-                alert('Đăng ký thành công! Hãy kiểm tra email để xác thực (nếu có), sau đó quay lại đăng nhập.');
+                alert('Đăng ký thành công! Hãy kiểm tra email (nếu có) rồi đăng nhập.');
                 showAuthModal('login');
             }
         } else {
@@ -72,14 +72,13 @@ async function handleAuthSubmit() {
 }
 
 function checkLogin() {
-    // Xử lý xác thực từ URL khi nhấn link trong mail
+    // Xử lý xác thực từ URL
     const hash = window.location.hash;
     if (hash && hash.includes("access_token=")) {
         const params = new URLSearchParams(hash.replace("#", "?"));
         const token = params.get("access_token");
         if (token) {
             localStorage.setItem('access_token', token);
-            // Sau khi có token từ mail, có thể cần login lại hoặc gọi api lấy mail
             localStorage.setItem('user_email', "Thành viên đã xác thực");
             window.history.replaceState(null, null, window.location.pathname);
         }
@@ -95,7 +94,6 @@ function checkLogin() {
     if (token) {
         if (loggedInDiv) loggedInDiv.style.display = 'flex';
         if (loggedOutDiv) loggedOutDiv.style.display = 'none';
-        // HIỂN THỊ EMAIL LÊN NÚT
         if (emailSpan) {
             emailSpan.innerText = (email && email !== "null") ? email : "Đã đăng nhập";
         }
@@ -112,69 +110,8 @@ function logout() {
 }
 
 // ============================================
-// 2. HÀM GỌI DỮ LIỆU TỪ BACKEND (CÓ CHẶN 3 LẦN)
+// 2. HÀM THANH TOÁN (PAYWALL & QR CODE)
 // ============================================
-
-
-async function fetchAllVideoInfo(youtubeUrl, apiKey) {
-    const token = localStorage.getItem('access_token');
-    
-    if (!token) {
-        alert('⚠️ Vui lòng đăng nhập để sử dụng!');
-        showAuthModal('login');
-        throw new Error('AUTH_REQUIRED'); // Dừng ngay tại đây
-    }
-
-    const deviceId = typeof getDeviceFingerprint === 'function' ? getDeviceFingerprint() : "unknown";
-
-    // Gọi Backend
-    const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ 
-            youtubeUrl: youtubeUrl, 
-            userApiKey: apiKey,
-            deviceId: deviceId 
-        })
-    });
-
-    // 1. Kiểm tra các lỗi HTTP (401, 402, 500)
-    if (response.status === 401) {
-        alert("Phiên đăng nhập hết hạn. Đang đăng xuất...");
-        logout();
-        throw new Error("TOKEN_EXPIRED");
-    }
-    if (response.status === 402) {
-        showPricingModal();
-        throw new Error('LIMIT_REACHED');
-    }
-
-    const data = await response.json();
-
-    // 2. Kiểm tra nếu Backend trả về object báo lỗi
-    if (data.error) {
-        console.error("Lỗi từ Google/Backend:", data.error);
-        // Ném ra lỗi cụ thể để hiện lên Alert
-        throw new Error(typeof data.error === 'string' ? data.error : data.error.message);
-    }
-
-    // 3. Kiểm tra cấu trúc dữ liệu JSON (QUAN TRỌNG NHẤT)
-    if (!data.items) {
-        console.error("Dữ liệu lạ:", data);
-        throw new Error("API Key của bạn bị sai hoặc chưa kích hoạt YouTube Data API v3.");
-    }
-
-    if (data.items.length === 0) {
-        throw new Error("Không tìm thấy video nào với Link này (Có thể video Riêng tư).");
-    }
-
-    // Chỉ trả về khi chắc chắn có dữ liệu
-    return data.items[0];
-}
-let selectedPlan = null;
 
 function showPricingModal() {
     const oldModal = document.getElementById('paywall-modal');
@@ -258,7 +195,6 @@ async function submitOrder() {
     btn.disabled = true;
 
     try {
-        // Gửi đơn hàng lên Backend để lưu vào Supabase
         const res = await fetch(`${BACKEND_URL}/api/payment/createOrder`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -273,12 +209,11 @@ async function submitOrder() {
         if (!res.ok) throw new Error("Không thể khởi tạo đơn hàng");
 
         // --- CẤU HÌNH NGÂN HÀNG CỦA BẠN TẠI ĐÂY ---
-        const BANK_ID = "MSB"; // Thay bằng mã ngân hàng của bạn (VCB, MB, ACB...)
-        const ACCOUNT_NO = "04401015525214"; // THAY BẰNG SỐ TÀI KHOẢN CỦA BẠN
-        const ACCOUNT_NAME = "VU THANH NHAN"; // THAY BẰNG TÊN TÀI KHOẢN (VIẾT HOA KHÔNG DẤU)
+        const BANK_ID = "MSB"; 
+        const ACCOUNT_NO = "04401015525214"; 
+        const ACCOUNT_NAME = "VU THANH NHAN"; 
         const DESCRIPTION = "NAP YT " + (email && email !== "null" ? email : phone); 
 
-        // Tạo link VietQR tự động
         const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${selectedPlan.amount}&addInfo=${encodeURIComponent(DESCRIPTION)}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
         
         document.getElementById('qr-code-img').src = qrUrl;
@@ -291,11 +226,80 @@ async function submitOrder() {
     }
 }
 
+// ============================================
+// 3. HÀM CHÍNH GỌI DỮ LIỆU TỪ BACKEND
+// ============================================
 
+async function fetchAllVideoInfo(youtubeUrl, apiKey) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        alert('Vui lòng đăng nhập để sử dụng!');
+        showAuthModal('login');
+        throw new Error('AUTH_REQUIRED');
+    }
+
+    const deviceId = getDeviceFingerprint();
+
+    console.log("Đang gửi yêu cầu lên Backend...");
+
+    const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ 
+            youtubeUrl: youtubeUrl, 
+            userApiKey: apiKey,
+            deviceId: deviceId 
+        })
+    });
+
+    if (response.status === 401) {
+        alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
+        logout();
+        throw new Error("TOKEN_EXPIRED");
+    }
+    if (response.status === 402) {
+        showPricingModal();
+        throw new Error('LIMIT_REACHED');
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        console.error("Lỗi Backend:", data);
+        throw new Error(data.error || data.message || `Lỗi Server: ${response.status}`);
+    }
+
+    if (data.error) {
+        console.error("Lỗi Google API:", data.error);
+        throw new Error(`Google API báo lỗi: ${data.error.message}`);
+    }
+
+    if (!data.items || data.items.length === 0) {
+        throw new Error('Không tìm thấy video này (hoặc Link sai).');
+    }
+
+    return data.items[0];
+}
 
 // ============================================
-// 3. TIỆN ÍCH & PHÂN TÍCH (GIỮ NGUYÊN LOGIC GỐC)
+// 4. TIỆN ÍCH & PHÂN TÍCH
 // ============================================
+
+function getDeviceFingerprint() {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl');
+    const debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
+    const parts = [
+        navigator.userAgent,
+        screen.width + "x" + screen.height,
+        navigator.hardwareConcurrency || "n/a",
+        gl ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "no-gpu"
+    ];
+    return btoa(unescape(encodeURIComponent(parts.join('|'))));
+}
 
 function extractVideoId(url) {
     const patterns = [/(?:v=|\/)([a-zA-Z0-9_-]{11})/, /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/];
@@ -307,8 +311,7 @@ function extractVideoId(url) {
 }
 
 function formatDate(isoDate) {
-    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    return new Date(isoDate).toLocaleDateString('vi-VN', options);
+    return new Date(isoDate).toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function formatNumber(num) {
@@ -321,11 +324,11 @@ function formatNumber(num) {
 
 function formatDuration(iso) {
     const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-    let result = [];
-    if (match[1]) result.push(`${match[1]} giờ`);
-    if (match[2]) result.push(`${match[2]} phút`);
-    if (match[3]) result.push(`${match[3]} giây`);
-    return result.join(' ') || '0 giây';
+    let res = [];
+    if (match[1]) res.push(`${match[1]} giờ`);
+    if (match[2]) res.push(`${match[2]} phút`);
+    if (match[3]) res.push(`${match[3]} giây`);
+    return res.join(' ') || '0 giây';
 }
 
 function calculatePopularityScore(views, likes, comments, daysOld) {
@@ -333,15 +336,12 @@ function calculatePopularityScore(views, likes, comments, daysOld) {
     return Math.round(((views / daysOld) * 0.7 + ((likes + comments) / views * 100) * 0.3) * 100) / 100;
 }
 
-// Hàm phân tích dữ liệu video
 function analyzeVideoData(videoData, categoryName) {
     const snippet = videoData.snippet || {};
     const stats = videoData.statistics || {};
     const content = videoData.contentDetails || {};
-    
     const publishedDate = new Date(snippet.publishedAt);
     const diffDays = Math.ceil(Math.abs(new Date() - publishedDate) / (1000 * 60 * 60 * 24));
-    
     const viewCount = parseInt(stats.viewCount || 0);
     const likeCount = parseInt(stats.likeCount || 0);
     const commentCount = parseInt(stats.commentCount || 0);
@@ -361,7 +361,7 @@ function analyzeVideoData(videoData, categoryName) {
         contentDetails: {
             durationFormatted: formatDuration(content.duration),
             definition: content.definition.toUpperCase(),
-            caption: content.caption === 'true' ? 'Có' : 'Không'
+            caption: content.content === 'true' ? 'Có' : 'Không'
         },
         analysis: {
             age: { daysOld: diffDays },
@@ -370,12 +370,29 @@ function analyzeVideoData(videoData, categoryName) {
                 popularityScore: calculatePopularityScore(viewCount, likeCount, commentCount, diffDays)
             },
             seo: { titleLength: snippet.title.length, tagCount: (snippet.tags || []).length }
-        }
+        },
+        categorization: { categoryName: categoryName }
     };
 }
 
+async function fetchVideoCategory(categoryId, apiKey) {
+    try {
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/videoCategories?part=snippet&id=${categoryId}&key=${apiKey}`);
+        const data = await response.json();
+        return data.items?.[0]?.snippet?.title || 'Không xác định';
+    } catch { return 'Không xác định'; }
+}
+
+async function fetchChannelInfo(channelId, apiKey) {
+    try {
+        const response = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${apiKey}`);
+        const data = await response.json();
+        return data.items?.[0] || null;
+    } catch { return null; }
+}
+
 // ============================================
-// 4. GIAO DIỆN HIỂN THỊ (TABS)
+// 5. GIAO DIỆN HIỂN THỊ (TABS)
 // ============================================
 
 function createTabInterface(videoInfo) {
@@ -395,7 +412,7 @@ function createTabInterface(videoInfo) {
                             <h2>${videoInfo.basic.title}</h2>
                             <p><b>Kênh:</b> ${videoInfo.basic.channelTitle}</p>
                             <p><b>Ngày đăng:</b> ${videoInfo.basic.publishedAtFormatted} (${videoInfo.analysis.age.daysOld} ngày trước)</p>
-                            <p><b>Thời lượng:</b> ${videoInfo.contentDetails.durationFormatted}</p>
+                            <p><b>Danh mục:</b> ${videoInfo.categorization.categoryName}</p>
                             <div style="display:flex; gap:10px; margin-top:10px;">
                                 <span style="background:#e7f3ff; padding:5px 10px; border-radius:5px;">👁️ ${videoInfo.statistics.viewCount}</span>
                                 <span style="background:#f6ffed; padding:5px 10px; border-radius:5px;">👍 ${videoInfo.statistics.likeCount}</span>
@@ -410,7 +427,7 @@ function createTabInterface(videoInfo) {
                 <div class="tab-pane" id="details-tab" style="display:none;">
                     <table style="width:100%; border-collapse:collapse;">
                         <tr style="border-bottom:1px solid #eee;"><td style="padding:10px;">Chất lượng:</td><td><b>${videoInfo.contentDetails.definition}</b></td></tr>
-                        <tr style="border-bottom:1px solid #eee;"><td style="padding:10px;">Phụ đề:</td><td>${videoInfo.contentDetails.caption}</td></tr>
+                        <tr style="border-bottom:1px solid #eee;"><td style="padding:10px;">Thời lượng:</td><td>${videoInfo.contentDetails.durationFormatted}</td></tr>
                         <tr style="border-bottom:1px solid #eee;"><td style="padding:10px;">Độ dài tiêu đề:</td><td>${videoInfo.analysis.seo.titleLength} ký tự</td></tr>
                         <tr style="border-bottom:1px solid #eee;"><td style="padding:10px;">Số lượng Tags:</td><td>${videoInfo.analysis.seo.tagCount}</td></tr>
                     </table>
@@ -444,7 +461,7 @@ function initTabs() {
 }
 
 // ============================================
-// 5. LUỒNG CHÍNH (KHI NHẤN NÚT LẤY THÔNG TIN)
+// 6. KHỞI TẠO LUỒNG CHÍNH
 // ============================================
 
 async function getFullVideoInfo() {
@@ -466,12 +483,14 @@ async function getFullVideoInfo() {
     resultDiv.style.display = 'none';
     
     try {
-        // GỌI BACKEND ĐỂ LẤY DỮ LIỆU (BACKEND ĐÃ XỬ LÝ ĐẾM LƯỢT THEO USER)
+        console.log('🔄 Đang tải dữ liệu từ YouTube API...');
         const videoData = await fetchAllVideoInfo(youtubeUrl, apiKey);
         fullVideoData = videoData;
         
+        const categoryName = await fetchVideoCategory(videoData.snippet.categoryId, apiKey);
+        
         // Phân tích
-        const analyzedData = analyzeVideoData(videoData, "Video");
+        const analyzedData = analyzeVideoData(videoData, categoryName);
         
         // Hiển thị
         loadingDiv.style.display = 'none';
@@ -482,17 +501,22 @@ async function getFullVideoInfo() {
         
     } catch (error) {
         loadingDiv.style.display = 'none';
-        if (error.message !== 'AUTH_REQUIRED' && error.message !== 'LIMIT_REACHED') {
+        // Chỉ hiện lỗi nếu không phải do Auth/Limit (đã có modal riêng)
+        if (error.message !== 'AUTH_REQUIRED' && error.message !== 'LIMIT_REACHED' && error.message !== 'TOKEN_EXPIRED') {
             alert('Lỗi: ' + error.message);
         }
     }
 }
 
 // ============================================
-// 6. KHỞI TẠO KHI TẢI TRANG
+// 7. KHỞI TẠO SỰ KIỆN KHI TẢI TRANG
 // ============================================
 
 getInfoBtn.addEventListener('click', getFullVideoInfo);
+
+youtubeUrlInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') getFullVideoInfo();
+});
 
 window.addEventListener('load', () => {
     checkLogin();
@@ -503,58 +527,3 @@ window.addEventListener('load', () => {
 apiKeyInput.addEventListener('change', () => {
     localStorage.setItem('youtube_api_key', apiKeyInput.value.trim());
 });
-// Hàm tạo vân tay thiết bị đơn giản nhưng hiệu quả
-function getDeviceFingerprint() {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl');
-    const debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
-    
-    // Kết hợp thông số phần cứng
-    const fingerprintParts = [
-        navigator.userAgent,
-        screen.width + "x" + screen.height,
-        navigator.hardwareConcurrency, // Số nhân CPU
-        navigator.language,
-        gl ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "no-gpu" // Loại card màn hình
-    ];
-    
-    // Mã hóa thành một chuỗi duy nhất (Base64)
-    return btoa(fingerprintParts.join('|'));
-}
-
-// Sửa lại hàm fetchVideoInfo trong app.js
-async function fetchAllVideoInfo(youtubeUrl, apiKey) {
-    const token = localStorage.getItem('access_token');
-    const deviceId = getDeviceFingerprint(); // Lấy vân tay máy tính
-
-    const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ 
-            youtubeUrl, 
-            userApiKey: apiKey,
-            deviceId: deviceId // Gửi kèm mã máy lên Backend
-        })
-    });
-    // ... giữ nguyên phần xử lý cũ ...
-}
-// Hàm tạo mã định danh thiết bị duy nhất (Fingerprint)
-function getDeviceFingerprint() {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl');
-    const debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
-    
-    const fingerprintParts = [
-        navigator.userAgent,
-        screen.width + "x" + screen.height,
-        navigator.hardwareConcurrency || "n/a", // Số nhân CPU
-        navigator.language,
-        gl ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "no-gpu" // Loại card màn hình
-    ];
-    
-    // Mã hóa thành chuỗi Base64 để làm DeviceID
-    return btoa(unescape(encodeURIComponent(fingerprintParts.join('|'))));
-}
