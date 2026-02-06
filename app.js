@@ -119,16 +119,16 @@ function logout() {
 async function fetchAllVideoInfo(youtubeUrl, apiKey) {
     const token = localStorage.getItem('access_token');
     
-    // 1. Kiểm tra Token ở phía Client
+    // 1. Kiểm tra Token
     if (!token) {
-        alert('Vui lòng đăng nhập để sử dụng!');
-        showAuthModal('login');
-        throw new Error('AUTH_REQUIRED');
+        alert('⚠️ Cảnh báo: Không tìm thấy Token đăng nhập!');
+        // Tạm thời chưa throw Error để xem backend phản ứng thế nào
     }
 
-    const deviceId = typeof getDeviceFingerprint === 'function' ? getDeviceFingerprint() : "unknown";
+    const deviceId = typeof getDeviceFingerprint === 'function' ? getDeviceFingerprint() : "debug_device";
 
-    // 2. Gọi Backend
+    console.log("🚀 Đang gửi yêu cầu lên Backend...");
+    
     const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
         method: 'POST',
         headers: { 
@@ -142,34 +142,50 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
         })
     });
 
-    // --- BẮT LỖI TỪ BACKEND (QUAN TRỌNG) ---
+    // 2. Lấy dữ liệu thô (Text) trước để kiểm tra xem có phải JSON không
+    const rawText = await response.text();
+    console.log("📦 Dữ liệu thô nhận được:", rawText);
 
-    // Lỗi 401: Token sai hoặc hết hạn -> Đăng xuất ngay
+    // 3. Cố gắng chuyển sang JSON
+    let data;
+    try {
+        data = JSON.parse(rawText);
+    } catch (e) {
+        alert(`❌ LỖI NGHIÊM TRỌNG: Backend không trả về JSON!\n\nNội dung nhận được:\n${rawText.substring(0, 200)}...`);
+        throw new Error("Backend Error: Invalid JSON");
+    }
+
+    // 4. Kiểm tra các mã lỗi HTTP cụ thể
     if (response.status === 401) {
-        alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại!");
-        logout(); // Gọi hàm đăng xuất để xóa token hỏng
+        alert(`❌ LỖI 401 (Unauthorized):\nBackend từ chối truy cập.\nLý do: ${data.error || data.message}`);
+        logout(); // Đăng xuất
         throw new Error("TOKEN_EXPIRED");
     }
 
-    // Lỗi 402: Hết lượt dùng -> Hiện bảng giá
     if (response.status === 402) {
+        alert(`💎 LỖI 402 (Payment):\n${data.message || 'Hết lượt dùng'}`);
         showPricingModal();
         throw new Error('LIMIT_REACHED');
     }
 
-    const data = await response.json();
-
-    // Lỗi 400/500: Lỗi hệ thống hoặc lỗi Google API do Backend trả về
     if (!response.ok) {
-        console.error("Backend Error:", data);
-        throw new Error(data.error || data.message || "Lỗi hệ thống");
+        alert(`❌ LỖI BACKEND (${response.status}):\n${JSON.stringify(data, null, 2)}`);
+        throw new Error(data.error || "Lỗi hệ thống");
     }
 
-    // Kiểm tra dữ liệu video có tồn tại không
-    if (!data.items || data.items.length === 0) {
-        throw new Error('Không tìm thấy video (Link sai hoặc Video riêng tư).');
+    // 5. KIỂM TRA DỮ LIỆU YOUTUBE (Đây là chỗ gây lỗi undefined)
+    if (!data.items) {
+        // Nếu không có items, in ra xem nó trả về cái gì
+        alert(`⚠️ DỮ LIỆU SAI CẤU TRÚC:\nBackend không trả về danh sách video.\n\nDữ liệu thực tế nhận được:\n${JSON.stringify(data, null, 2)}`);
+        throw new Error("Invalid YouTube Data Structure");
     }
 
+    if (data.items.length === 0) {
+        alert("⚠️ Google trả về danh sách rỗng (Không tìm thấy video này).");
+        throw new Error("Video Not Found");
+    }
+
+    // Nếu chạy đến đây là thành công
     return data.items[0];
 }
 
