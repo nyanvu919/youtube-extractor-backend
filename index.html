@@ -20,14 +20,25 @@
 
         <!-- MAIN CONTENT -->
         <div class="main">
-            <div id="auth-section" style="text-align: right; padding: 10px;">
-    <div id="user-logged-in" style="display:none;">
-        <span id="user-email"></span>
-        <button onclick="logout()" style="cursor:pointer;">Đăng xuất</button>
+         <!-- ĐOẠN MỚI THAY THẾ -->
+<div id="auth-wrapper" class="auth-wrapper">
+    <div id="user-logged-out" class="auth-group">
+        <button onclick="showAuthModal('login')" class="btn-auth btn-login">
+            <i class="fas fa-sign-in-alt"></i> Đăng nhập
+        </button>
+        <button onclick="showAuthModal('signup')" class="btn-auth btn-signup">
+            Đăng ký
+        </button>
     </div>
-    <div id="user-logged-out">
-        <button onclick="showAuthModal('login')" style="cursor:pointer;">Đăng nhập</button>
-        <button onclick="showAuthModal('signup')" style="cursor:pointer;">Đăng ký</button>
+    
+    <div id="user-logged-in" class="auth-group" style="display:none;">
+        <div class="user-info-chip">
+            <i class="fas fa-user-circle"></i>
+            <span id="user-email"></span>
+        </div>
+        <button onclick="logout()" class="btn-auth btn-logout">
+            Thoát
+        </button>
     </div>
 </div>
 
