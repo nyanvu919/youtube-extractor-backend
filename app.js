@@ -479,3 +479,41 @@ window.addEventListener('load', () => {
 apiKeyInput.addEventListener('change', () => {
     localStorage.setItem('youtube_api_key', apiKeyInput.value.trim());
 });
+// Hàm tạo vân tay thiết bị đơn giản nhưng hiệu quả
+function getDeviceFingerprint() {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl');
+    const debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
+    
+    // Kết hợp thông số phần cứng
+    const fingerprintParts = [
+        navigator.userAgent,
+        screen.width + "x" + screen.height,
+        navigator.hardwareConcurrency, // Số nhân CPU
+        navigator.language,
+        gl ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "no-gpu" // Loại card màn hình
+    ];
+    
+    // Mã hóa thành một chuỗi duy nhất (Base64)
+    return btoa(fingerprintParts.join('|'));
+}
+
+// Sửa lại hàm fetchVideoInfo trong app.js
+async function fetchAllVideoInfo(youtubeUrl, apiKey) {
+    const token = localStorage.getItem('access_token');
+    const deviceId = getDeviceFingerprint(); // Lấy vân tay máy tính
+
+    const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ 
+            youtubeUrl, 
+            userApiKey: apiKey,
+            deviceId: deviceId // Gửi kèm mã máy lên Backend
+        })
+    });
+    // ... giữ nguyên phần xử lý cũ ...
+}
