@@ -124,8 +124,10 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
         throw new Error('AUTH_REQUIRED');
     }
 
-    // Lấy vân tay thiết bị (Fingerprint)
+    // Lấy vân tay thiết bị
     const deviceId = getDeviceFingerprint();
+
+    console.log("Đang gửi yêu cầu lên Backend...");
 
     const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
         method: 'POST',
@@ -136,9 +138,38 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
         body: JSON.stringify({ 
             youtubeUrl: youtubeUrl, 
             userApiKey: apiKey,
-            deviceId: deviceId // Gửi kèm mã máy lên Backend
+            deviceId: deviceId 
         })
     });
+
+    // 1. Kiểm tra nếu hết lượt
+    if (response.status === 402) {
+        showPricingModal();
+        throw new Error('LIMIT_REACHED');
+    }
+
+    const data = await response.json();
+
+    // 2. Kiểm tra nếu Backend báo lỗi hệ thống
+    if (!response.ok) {
+        console.error("Lỗi Backend:", data);
+        throw new Error(data.error || data.message || `Lỗi Server: ${response.status}`);
+    }
+
+    // 3. KIỂM TRA LỖI TỪ GOOGLE API (Quan trọng nhất đoạn này)
+    if (data.error) {
+        console.error("Lỗi Google API:", data.error);
+        throw new Error(`Google API báo lỗi: ${data.error.message} (Lý do: ${data.error.errors?.[0]?.reason})`);
+    }
+
+    // 4. Kiểm tra xem có tìm thấy video không
+    if (!data.items || data.items.length === 0) {
+        console.warn("Dữ liệu trả về:", data);
+        throw new Error('Không tìm thấy video này (hoặc Video ở chế độ Riêng tư). Vui lòng kiểm tra lại Link và API Key.');
+    }
+
+    return data.items[0];
+}
 
     // Nếu Backend báo hết lượt (402)
     if (response.status === 402) {
