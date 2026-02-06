@@ -171,23 +171,6 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
     return data.items[0];
 }
 
-    // Nếu Backend báo hết lượt (402)
-    if (response.status === 402) {
-        showPricingModal();
-        throw new Error('LIMIT_REACHED');
-    }
-
-    if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || `Lỗi: ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (!data.items || data.items.length === 0) {
-        throw new Error('Video không tồn tại hoặc không truy cập được');
-    }
-    return data.items[0];
-}
 
 let selectedPlan = null;
 
