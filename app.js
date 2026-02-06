@@ -686,8 +686,9 @@ async function handleAuthSubmit() {
     const data = await res.json();
     if (res.ok) {
         if (currentAuthAction === 'login') {
-            localStorage.setItem('access_token', data.access_token);
-            location.reload();
+          localStorage.setItem('access_token', data.access_token);
+          localStorage.setItem('user_email', data.user.email); // Dòng này mới để lưu email
+          location.reload();
         } else {
             alert('Đăng ký thành công! Hãy đăng nhập.');
             showAuthModal('login');
@@ -700,22 +701,38 @@ async function handleAuthSubmit() {
 }
 
 function checkLogin() {
-    // --- ĐOẠN MỚI: XỬ LÝ TOKEN TỪ EMAIL XÁC THỰC ---
-    const hash = window.location.hash; // Lấy phần sau dấu # trên URL
+    // 1. Xử lý nếu người dùng vừa nhấn link xác thực từ Email
+    const hash = window.location.hash;
     if (hash && hash.includes("access_token=")) {
-        // Biến chuỗi #access_token=abc... thành đối tượng để dễ lấy dữ liệu
         const params = new URLSearchParams(hash.replace("#", "?"));
         const token = params.get("access_token");
-        const email = params.get("email") || "User"; // Tùy phiên bản Supabase có trả về hay không
-
         if (token) {
             localStorage.setItem('access_token', token);
-            localStorage.setItem('user_email', email);
-            // Xóa cái đống loằng ngoằng trên URL cho đẹp
+            // Tạm thời để "Đã xác thực", email sẽ được cập nhật sau khi gọi API hoặc login lại
+            localStorage.setItem('user_email', "Thành viên");
             window.history.replaceState(null, null, window.location.pathname);
-            alert("Xác thực email thành công! Chào mừng bạn.");
         }
     }
+
+    // 2. Kiểm tra xem có đang đăng nhập không
+    const token = localStorage.getItem('access_token');
+    const email = localStorage.getItem('user_email');
+    
+    const loggedInDiv = document.getElementById('user-logged-in');
+    const loggedOutDiv = document.getElementById('user-logged-out');
+    const emailSpan = document.getElementById('user-email');
+
+    if (token) {
+        if (loggedInDiv) loggedInDiv.style.display = 'flex';
+        if (loggedOutDiv) loggedOutDiv.style.display = 'none';
+        if (emailSpan && email) {
+            emailSpan.innerText = email; // Đưa email vào thẻ span để hiển thị
+        }
+    } else {
+        if (loggedInDiv) loggedInDiv.style.display = 'none';
+        if (loggedOutDiv) loggedOutDiv.style.display = 'flex';
+    }
+}
     // --- KẾT THÚC ĐOẠN MỚI ---
 
     const token = localStorage.getItem('access_token');
