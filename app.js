@@ -249,9 +249,9 @@ async function submitOrder() {
         if (!res.ok) throw new Error("Không thể khởi tạo đơn hàng");
 
         // --- CẤU HÌNH NGÂN HÀNG CỦA BẠN TẠI ĐÂY ---
-        const BANK_ID = "MB"; // Thay bằng mã ngân hàng của bạn (VCB, MB, ACB...)
-        const ACCOUNT_NO = "123456789"; // THAY BẰNG SỐ TÀI KHOẢN CỦA BẠN
-        const ACCOUNT_NAME = "NGUYEN VAN A"; // THAY BẰNG TÊN TÀI KHOẢN (VIẾT HOA KHÔNG DẤU)
+        const BANK_ID = "MSB"; // Thay bằng mã ngân hàng của bạn (VCB, MB, ACB...)
+        const ACCOUNT_NO = "04401015525214"; // THAY BẰNG SỐ TÀI KHOẢN CỦA BẠN
+        const ACCOUNT_NAME = "VU THANH NHAN"; // THAY BẰNG TÊN TÀI KHOẢN (VIẾT HOA KHÔNG DẤU)
         const DESCRIPTION = "NAP YT " + (email && email !== "null" ? email : phone); 
 
         // Tạo link VietQR tự động
