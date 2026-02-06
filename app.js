@@ -115,6 +115,7 @@ function logout() {
 // 2. HÀM GỌI DỮ LIỆU TỪ BACKEND (CÓ CHẶN 3 LẦN)
 // ============================================
 
+
 async function fetchAllVideoInfo(youtubeUrl, apiKey) {
     const token = localStorage.getItem('access_token');
     if (!token) {
@@ -123,13 +124,20 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
         throw new Error('AUTH_REQUIRED');
     }
 
+    // Lấy vân tay thiết bị (Fingerprint)
+    const deviceId = getDeviceFingerprint();
+
     const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify({ youtubeUrl, userApiKey: apiKey })
+        body: JSON.stringify({ 
+            youtubeUrl: youtubeUrl, 
+            userApiKey: apiKey,
+            deviceId: deviceId // Gửi kèm mã máy lên Backend
+        })
     });
 
     // Nếu Backend báo hết lượt (402)
@@ -516,4 +524,21 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
         })
     });
     // ... giữ nguyên phần xử lý cũ ...
+}
+// Hàm tạo mã định danh thiết bị duy nhất (Fingerprint)
+function getDeviceFingerprint() {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl');
+    const debugInfo = gl ? gl.getExtension('WEBGL_debug_renderer_info') : null;
+    
+    const fingerprintParts = [
+        navigator.userAgent,
+        screen.width + "x" + screen.height,
+        navigator.hardwareConcurrency || "n/a", // Số nhân CPU
+        navigator.language,
+        gl ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "no-gpu" // Loại card màn hình
+    ];
+    
+    // Mã hóa thành chuỗi Base64 để làm DeviceID
+    return btoa(unescape(encodeURIComponent(fingerprintParts.join('|'))));
 }
