@@ -119,16 +119,15 @@ function logout() {
 async function fetchAllVideoInfo(youtubeUrl, apiKey) {
     const token = localStorage.getItem('access_token');
     
-    // 1. Kiểm tra Token
     if (!token) {
-        alert('⚠️ Cảnh báo: Không tìm thấy Token đăng nhập!');
-        // Tạm thời chưa throw Error để xem backend phản ứng thế nào
+        alert('⚠️ Vui lòng đăng nhập để sử dụng!');
+        showAuthModal('login');
+        throw new Error('AUTH_REQUIRED'); // Dừng ngay tại đây
     }
 
-    const deviceId = typeof getDeviceFingerprint === 'function' ? getDeviceFingerprint() : "debug_device";
+    const deviceId = typeof getDeviceFingerprint === 'function' ? getDeviceFingerprint() : "unknown";
 
-    console.log("🚀 Đang gửi yêu cầu lên Backend...");
-    
+    // Gọi Backend
     const response = await fetch(`${BACKEND_URL}/api/youtube/getVideoInfo`, {
         method: 'POST',
         headers: { 
@@ -142,53 +141,39 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
         })
     });
 
-    // 2. Lấy dữ liệu thô (Text) trước để kiểm tra xem có phải JSON không
-    const rawText = await response.text();
-    console.log("📦 Dữ liệu thô nhận được:", rawText);
-
-    // 3. Cố gắng chuyển sang JSON
-    let data;
-    try {
-        data = JSON.parse(rawText);
-    } catch (e) {
-        alert(`❌ LỖI NGHIÊM TRỌNG: Backend không trả về JSON!\n\nNội dung nhận được:\n${rawText.substring(0, 200)}...`);
-        throw new Error("Backend Error: Invalid JSON");
-    }
-
-    // 4. Kiểm tra các mã lỗi HTTP cụ thể
+    // 1. Kiểm tra các lỗi HTTP (401, 402, 500)
     if (response.status === 401) {
-        alert(`❌ LỖI 401 (Unauthorized):\nBackend từ chối truy cập.\nLý do: ${data.error || data.message}`);
-        logout(); // Đăng xuất
+        alert("Phiên đăng nhập hết hạn. Đang đăng xuất...");
+        logout();
         throw new Error("TOKEN_EXPIRED");
     }
-
     if (response.status === 402) {
-        alert(`💎 LỖI 402 (Payment):\n${data.message || 'Hết lượt dùng'}`);
         showPricingModal();
         throw new Error('LIMIT_REACHED');
     }
 
-    if (!response.ok) {
-        alert(`❌ LỖI BACKEND (${response.status}):\n${JSON.stringify(data, null, 2)}`);
-        throw new Error(data.error || "Lỗi hệ thống");
+    const data = await response.json();
+
+    // 2. Kiểm tra nếu Backend trả về object báo lỗi
+    if (data.error) {
+        console.error("Lỗi từ Google/Backend:", data.error);
+        // Ném ra lỗi cụ thể để hiện lên Alert
+        throw new Error(typeof data.error === 'string' ? data.error : data.error.message);
     }
 
-    // 5. KIỂM TRA DỮ LIỆU YOUTUBE (Đây là chỗ gây lỗi undefined)
+    // 3. Kiểm tra cấu trúc dữ liệu JSON (QUAN TRỌNG NHẤT)
     if (!data.items) {
-        // Nếu không có items, in ra xem nó trả về cái gì
-        alert(`⚠️ DỮ LIỆU SAI CẤU TRÚC:\nBackend không trả về danh sách video.\n\nDữ liệu thực tế nhận được:\n${JSON.stringify(data, null, 2)}`);
-        throw new Error("Invalid YouTube Data Structure");
+        console.error("Dữ liệu lạ:", data);
+        throw new Error("API Key của bạn bị sai hoặc chưa kích hoạt YouTube Data API v3.");
     }
 
     if (data.items.length === 0) {
-        alert("⚠️ Google trả về danh sách rỗng (Không tìm thấy video này).");
-        throw new Error("Video Not Found");
+        throw new Error("Không tìm thấy video nào với Link này (Có thể video Riêng tư).");
     }
 
-    // Nếu chạy đến đây là thành công
+    // Chỉ trả về khi chắc chắn có dữ liệu
     return data.items[0];
 }
-
 let selectedPlan = null;
 
 function showPricingModal() {
