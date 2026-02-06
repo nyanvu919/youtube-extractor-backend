@@ -150,34 +150,124 @@ async function fetchAllVideoInfo(youtubeUrl, apiKey) {
     return data.items[0];
 }
 
+let selectedPlan = null;
+
 function showPricingModal() {
-    // Xóa modal cũ nếu có để tránh trùng lặp
     const oldModal = document.getElementById('paywall-modal');
     if (oldModal) oldModal.remove();
 
     const paywallHtml = `
-        <div id="paywall-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);display:flex;justify-content:center;align-items:center;z-index:9999;font-family:sans-serif;">
-            <div style="background:white;padding:40px;border-radius:20px;max-width:500px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-                <h2 style="color:#ff0000;font-size:28px;">💎 Hết lượt dùng miễn phí</h2>
-                <p style="font-size:18px;color:#555;">Bạn đã sử dụng hết 3 lượt tra cứu miễn phí. Vui lòng nâng cấp để tiếp tục tra cứu không giới hạn.</p>
-                <div style="display:flex;gap:15px;margin-top:30px;">
-                    <div style="flex:1;border:1px solid #ddd;padding:20px;border-radius:15px;">
-                        <h3>Gói Tháng</h3>
-                        <p style="font-size:22px;font-weight:bold;color:#ff0000;">50.000đ</p>
-                        <button onclick="window.open('https://momo.vn','_blank')" style="background:#333;color:white;border:none;padding:10px;width:100%;border-radius:5px;cursor:pointer;">MUA NGAY</button>
+        <div id="paywall-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;justify-content:center;align-items:center;z-index:9999;font-family:sans-serif;">
+            <!-- BƯỚC 1: CHỌN GÓI -->
+            <div id="payment-step-1" style="background:white;padding:30px;border-radius:20px;max-width:500px;width:90%;text-align:center;animation: fadeIn 0.3s;">
+                <h2 style="color:#ff0000;margin-bottom:10px;">💎 Nâng cấp tài khoản</h2>
+                <p style="color:#666;">Chọn gói phù hợp để tiếp tục tra cứu không giới hạn</p>
+                <div style="display:flex;gap:15px;margin-top:25px;">
+                    <div style="flex:1;border:1px solid #ddd;padding:20px;border-radius:15px;cursor:pointer;transition:0.3s;" onclick="goToStep2('Gói Tháng', 50000)">
+                        <h3 style="margin-bottom:5px;">Gói Tháng</h3>
+                        <p style="font-size:22px;font-weight:bold;color:#ff0000;margin:10px 0;">50.000đ</p>
+                        <button style="width:100%;padding:10px;background:#333;color:white;border:none;border-radius:5px;cursor:pointer;">MUA NGAY</button>
                     </div>
-                    <div style="flex:1;border:2px solid #ff0000;padding:20px;border-radius:15px;position:relative;">
-                        <span style="position:absolute;top:-10px;right:10px;background:#ff0000;color:white;font-size:10px;padding:2px 5px;border-radius:5px;">BEST</span>
-                        <h3>Gói Năm</h3>
-                        <p style="font-size:22px;font-weight:bold;color:#ff0000;">550.000đ</p>
-                        <button onclick="window.open('https://momo.vn','_blank')" style="background:#333;color:white;border:none;padding:10px;width:100%;border-radius:5px;cursor:pointer;">MUA NGAY</button>
+                    <div style="flex:1;border:2px solid #ff0000;padding:20px;border-radius:15px;cursor:pointer;position:relative;" onclick="goToStep2('Gói Năm', 550000)">
+                        <span style="position:absolute;top:-12px;right:10px;background:#ff0000;color:white;font-size:11px;padding:3px 8px;border-radius:5px;font-weight:bold;">TIẾT KIỆM</span>
+                        <h3 style="margin-bottom:5px;">Gói Năm</h3>
+                        <p style="font-size:22px;font-weight:bold;color:#ff0000;margin:10px 0;">550.000đ</p>
+                        <button style="width:100%;padding:10px;background:#ff0000;color:white;border:none;border-radius:5px;cursor:pointer;">MUA NGAY</button>
                     </div>
                 </div>
-                <button onclick="location.reload()" style="margin-top:20px;background:none;border:none;color:#999;text-decoration:underline;cursor:pointer;">Quay lại sau</button>
+                <button onclick="document.getElementById('paywall-modal').remove()" style="margin-top:20px;background:none;border:none;color:#999;text-decoration:underline;cursor:pointer;">Quay lại sau</button>
             </div>
-        </div>`;
+
+            <!-- BƯỚC 2: ĐIỀN THÔNG TIN -->
+            <div id="payment-step-2" style="display:none; background:white;padding:35px;border-radius:20px;max-width:400px;width:90%;animation: fadeIn 0.3s;">
+                <h3 style="text-align:center;margin-bottom:10px;">Thông tin xác nhận</h3>
+                <p style="text-align:center; color:#666; margin-bottom:20px;">Gói: <b id="display-plan" style="color:#ff0000;"></b></p>
+                <div style="text-align:left;">
+                    <label style="font-size:13px;color:#888;">Họ và tên</label>
+                    <input type="text" id="pay-name" placeholder="Ví dụ: Nguyễn Văn A" style="width:100%;padding:12px;margin:5px 0 15px;border:1px solid #ddd;border-radius:8px;outline:none;">
+                    <label style="font-size:13px;color:#888;">Số điện thoại (Zalo)</label>
+                    <input type="text" id="pay-phone" placeholder="Để chúng tôi hỗ trợ bạn" style="width:100%;padding:12px;margin:5px 0 20px;border:1px solid #ddd;border-radius:8px;outline:none;">
+                </div>
+                <button id="btn-submit-order" onclick="submitOrder()" style="width:100%;padding:15px;background:#ff0000;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:16px;">TIẾP TỤC THANH TOÁN</button>
+                <button onclick="backToStep1()" style="width:100%;margin-top:15px;background:none;border:none;color:#666;cursor:pointer;text-decoration:underline;">Quay lại chọn gói</button>
+            </div>
+
+            <!-- BƯỚC 3: QUÉT MÃ QR -->
+            <div id="payment-step-3" style="display:none; background:white;padding:30px;border-radius:20px;max-width:400px;width:90%;text-align:center;animation: fadeIn 0.3s;">
+                <h3 style="margin-bottom:5px;">Quét mã VietQR</h3>
+                <p style="font-size:14px;color:#666;">Mở ứng dụng Ngân hàng để quét mã bên dưới</p>
+                <div style="margin:20px auto; padding:10px; border:1px solid #eee; border-radius:10px; width:fit-content;">
+                    <img id="qr-code-img" src="" style="width:100%; max-width:250px; display:block;">
+                </div>
+                <div style="background:#fff3cd;padding:12px;border-radius:8px;font-size:13px;color:#856404;margin-bottom:20px;line-height:1.4;">
+                    Hệ thống sẽ kiểm tra và kích hoạt tự động sau khi nhận được chuyển khoản (vui lòng không sửa nội dung chuyển tiền).
+                </div>
+                <button onclick="location.reload()" style="width:100%;padding:12px;background:#28a745;color:white;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">TÔI ĐÃ CHUYỂN TIỀN XONG</button>
+            </div>
+        </div>
+        <style>@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }</style>`;
     document.body.insertAdjacentHTML('beforeend', paywallHtml);
 }
+
+function goToStep2(plan, amount) {
+    selectedPlan = { plan, amount };
+    document.getElementById('payment-step-1').style.display = 'none';
+    document.getElementById('payment-step-2').style.display = 'block';
+    document.getElementById('display-plan').innerText = plan + " (" + amount.toLocaleString() + "đ)";
+}
+
+function backToStep1() {
+    document.getElementById('payment-step-1').style.display = 'block';
+    document.getElementById('payment-step-2').style.display = 'none';
+}
+
+async function submitOrder() {
+    const name = document.getElementById('pay-name').value.trim();
+    const phone = document.getElementById('pay-phone').value.trim();
+    const email = localStorage.getItem('user_email');
+    const token = localStorage.getItem('access_token');
+    const btn = document.getElementById('btn-submit-order');
+
+    if (!name || !phone) { alert("Vui lòng điền đầy đủ họ tên và số điện thoại!"); return; }
+
+    btn.innerText = "Đang xử lý...";
+    btn.disabled = true;
+
+    try {
+        // Gửi đơn hàng lên Backend để lưu vào Supabase
+        const res = await fetch(`${BACKEND_URL}/api/payment/createOrder`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({
+                full_name: name,
+                phone: phone,
+                plan: selectedPlan.plan,
+                amount: selectedPlan.amount
+            })
+        });
+
+        if (!res.ok) throw new Error("Không thể khởi tạo đơn hàng");
+
+        // --- CẤU HÌNH NGÂN HÀNG CỦA BẠN TẠI ĐÂY ---
+        const BANK_ID = "MB"; // Thay bằng mã ngân hàng của bạn (VCB, MB, ACB...)
+        const ACCOUNT_NO = "123456789"; // THAY BẰNG SỐ TÀI KHOẢN CỦA BẠN
+        const ACCOUNT_NAME = "NGUYEN VAN A"; // THAY BẰNG TÊN TÀI KHOẢN (VIẾT HOA KHÔNG DẤU)
+        const DESCRIPTION = "NAP YT " + (email && email !== "null" ? email : phone); 
+
+        // Tạo link VietQR tự động
+        const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${selectedPlan.amount}&addInfo=${encodeURIComponent(DESCRIPTION)}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
+        
+        document.getElementById('qr-code-img').src = qrUrl;
+        document.getElementById('payment-step-2').style.display = 'none';
+        document.getElementById('payment-step-3').style.display = 'block';
+    } catch (err) {
+        alert("Lỗi: " + err.message);
+        btn.innerText = "TIẾP TỤC THANH TOÁN";
+        btn.disabled = false;
+    }
+}
+
+
 
 // ============================================
 // 3. TIỆN ÍCH & PHÂN TÍCH (GIỮ NGUYÊN LOGIC GỐC)
